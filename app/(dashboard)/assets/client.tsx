@@ -273,7 +273,7 @@ export function AssetsClient() {
                     </Button>
                 </div>
 
-                <ScrollArea className="flex-1 border rounded-md bg-white">
+                <ScrollArea className="flex-1 border rounded-md bg-card">
                     <div className="flex flex-col divide-y">
                         {isLoading && assetsList.length === 0 ? (
                             <div className="flex flex-col items-center justify-center p-12 gap-4">
@@ -603,7 +603,7 @@ function AssetDetail({ asset, allAssets, onClose, onSelect, onUpdate }: { asset:
     }
 
     return (
-        <div className="flex h-full flex-col bg-white">
+        <div className="flex h-full flex-col bg-card">
             {/* Header */}
             <div className="flex items-start justify-between p-6 pb-0 shrink-0">
                 <div className="flex flex-col gap-1">
