@@ -276,7 +276,10 @@ export function AssetsClient() {
                 <ScrollArea className="flex-1 border rounded-md bg-white">
                     <div className="flex flex-col divide-y">
                         {isLoading && assetsList.length === 0 ? (
-                            <div className="p-8 text-center text-muted-foreground">Loading assets...</div>
+                            <div className="flex flex-col items-center justify-center p-12 gap-4">
+                                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                                <p className="text-muted-foreground animate-pulse">Loading assets...</p>
+                            </div>
                         ) : (
                             <>
                                 {assetsList.filter(a => !a.parentAssetId).filter(a => {
@@ -299,8 +302,20 @@ export function AssetsClient() {
                                     )
                                 })}
                                 {assetsList.length === 0 && (
-                                    <div className="p-8 text-center text-muted-foreground">
-                                        No assets found.
+                                    <div className="flex flex-col items-center justify-center p-12 text-center">
+                                        <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+                                            <Network className="h-8 w-8 text-muted-foreground" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold mb-1">No assets found</h3>
+                                        <p className="text-muted-foreground max-w-sm mb-6">
+                                            Get started by creating your first asset to track equipment, machinery, and more.
+                                        </p>
+                                        <Button asChild>
+                                            <Link href="/assets/new">
+                                                <Plus className="mr-2 h-4 w-4" />
+                                                Create Asset
+                                            </Link>
+                                        </Button>
                                     </div>
                                 )}
                                 {nextBlockId && (
