@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useToast } from "@/components/ui/use-toast"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { format } from "date-fns"
-import { CalendarIcon, Check, ChevronsUpDown, Upload, X, QrCode } from "lucide-react"
+import { CalendarIcon, Check, ChevronsUpDown, Upload, X, QrCode, FileText, ChevronRight, ChevronDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import { Button } from "@/components/ui/button"
@@ -49,50 +50,170 @@ import {
     CardContent,
 } from "@/components/ui/card"
 
-import { users, locations } from "@/lib/data"
-import { useRouter } from "next/navigation"
+import { users, locations, assets } from "@/lib/data"
+import { useRouter, useSearchParams } from "next/navigation"
 
 const formSchema = z.object({
     name: z.string().min(2, { message: "Name must be at least 2 characters." }),
     locationId: z.string().min(1, { message: "Please select a location." }),
     criticality: z.enum(["Low", "Medium", "High", "Critical"]),
     description: z.string().optional(),
-    notes: z.string().optional(),
-    purchaseDate: z.date().optional(),
-    purchasePrice: z.coerce.number().optional(),
-    annualDepreciation: z.coerce.number().optional(),
-    warrantyEndDate: z.date().optional(),
-    vinNumber: z.string().optional(),
-    replacementCost: z.coerce.number().optional(),
-    serialNumber: z.string().optional(),
-    model: z.string().optional(),
+    year: z.coerce.number().optional(),
     manufacturer: z.string().optional(),
+    model: z.string().optional(),
+    serialNumber: z.string().optional(),
     teamsInCharge: z.array(z.string()).default([]),
     barcode: z.string().optional(),
     assetType: z.string().optional(),
     vendors: z.string().optional(),
+    parts: z.string().optional(),
+    parentAssetId: z.string().optional(),
+    notes: z.string().optional(),
 })
 
 interface AssetFormProps {
     initialData?: z.infer<typeof formSchema>
     isEditing?: boolean
+    assetId?: string
 }
 
-export function AssetForm({ initialData, isEditing = false }: AssetFormProps) {
+interface AssetTreeNode {
+    id: string;
+    name: string;
+    children?: AssetTreeNode[];
+}
+
+// ... (AssetTreeNode interface remains)
+
+export function AssetForm({ initialData, isEditing = false, assetId }: AssetFormProps) {
     const router = useRouter()
+    const { toast } = useToast()
+    const searchParams = useSearchParams()
     const [barcodeMode, setBarcodeMode] = useState<"auto" | "manual">("auto")
+    const [assetTree, setAssetTree] = useState<AssetTreeNode[]>([])
+
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema) as any,
         defaultValues: initialData || {
-            name: "",
+            name: searchParams.get("name") || "",
             criticality: "Medium",
             teamsInCharge: [],
+            parentAssetId: searchParams.get("parentId") || undefined,
         },
     })
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        console.log(values)
-        router.push("/assets")
+    useEffect(() => {
+        const focusParam = searchParams.get("focus")
+        if (focusParam === "manufacturer") {
+            const manufacturerInput = document.querySelector('input[name="manufacturer"]') as HTMLInputElement
+            if (manufacturerInput) {
+                manufacturerInput.focus()
+                manufacturerInput.scrollIntoView({ behavior: "smooth", block: "center" })
+            }
+        }
+    }, [searchParams])
+
+    // Fetch assets and build tree
+    useEffect(() => {
+        const fetchAssets = async () => {
+            try {
+                // Fetch a large number of assets to build the tree
+                // In a real app, you might want a specific endpoint for the tree or lazy loading
+                const res = await fetch('/api/assets?limit=1000')
+                const data = await res.json()
+
+                if (data.items) {
+                    const nodes: Record<string, AssetTreeNode> = {}
+                    const roots: AssetTreeNode[] = []
+
+                    // First pass: create nodes
+                    data.items.forEach((item: any) => {
+                        const id = item.id || item._id
+                        nodes[id] = {
+                            id,
+                            name: item.name,
+                            children: []
+                        }
+                    })
+
+                    // Second pass: link children to parents
+                    data.items.forEach((item: any) => {
+                        const id = item.id || item._id
+                        const parentId = item.parentAssetId
+
+                        if (parentId && nodes[parentId]) {
+                            nodes[parentId].children?.push(nodes[id])
+                        } else {
+                            roots.push(nodes[id])
+                        }
+                    })
+
+                    setAssetTree(roots)
+                }
+            } catch (error) {
+                console.error("Failed to load asset tree:", error)
+            }
+        }
+
+        fetchAssets()
+    }, [])
+
+
+
+    async function onSubmit(values: z.infer<typeof formSchema>) {
+        try {
+            console.log("Submitting asset:", values)
+
+            const payload = {
+                ...values,
+                status: "Online"
+            }
+
+            let response;
+            if (isEditing && assetId) {
+                response = await fetch('/api/assets', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ ...payload, id: assetId }),
+                })
+            } else {
+                response = await fetch('/api/assets', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                })
+            }
+
+            if (response && !response.ok) {
+                throw new Error('Failed to save asset')
+            }
+
+            const data = await response.json()
+
+            toast({
+                title: isEditing ? "Asset Updated" : "Asset Created",
+                description: `Successfully ${isEditing ? "updated" : "created"} asset ${values.name}.`,
+            })
+
+            if (isEditing && assetId) {
+                router.push(`/assets?id=${assetId}`)
+            } else {
+                const newId = data.item_id
+                router.push(`/assets?id=${newId}`)
+            }
+            router.refresh()
+        } catch (error) {
+            console.error("Failed to save asset:", error)
+            toast({
+                title: "Error",
+                description: "Failed to save asset. Please try again.",
+                variant: "destructive",
+            })
+        }
     }
 
     return (
@@ -107,12 +228,13 @@ export function AssetForm({ initialData, isEditing = false }: AssetFormProps) {
                     <Form {...form}>
                         <form id="asset-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 
+                            {/* 1. Name */}
                             <FormField
                                 control={form.control}
                                 name="name"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Asset Name</FormLabel>
+                                        <FormLabel>Name</FormLabel>
                                         <FormControl>
                                             <Input placeholder="e.g. Forklift #9" {...field} />
                                         </FormControl>
@@ -121,14 +243,29 @@ export function AssetForm({ initialData, isEditing = false }: AssetFormProps) {
                                 )}
                             />
 
-                            {/* Photo Upload Mock */}
-                            <div className="rounded-lg border border-dashed px-8 py-10 text-center hover:bg-accent/40 hover:border-primary transition-colors cursor-pointer">
-                                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                    <Upload className="h-8 w-8" />
-                                    <span className="text-sm font-medium">Add or drag pictures</span>
+                            {/* 2. Pictures */}
+                            <div className="space-y-2">
+                                <FormLabel>Pictures</FormLabel>
+                                <div className="rounded-lg border border-dashed px-8 py-10 text-center hover:bg-accent/40 hover:border-primary transition-colors cursor-pointer">
+                                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                                        <Upload className="h-8 w-8" />
+                                        <span className="text-sm font-medium">Add or drag pictures</span>
+                                    </div>
                                 </div>
                             </div>
 
+                            {/* 3. Files */}
+                            <div className="space-y-2">
+                                <FormLabel>Files</FormLabel>
+                                <div className="rounded-lg border border-dashed px-8 py-6 text-center hover:bg-accent/40 hover:border-primary transition-colors cursor-pointer">
+                                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                                        <FileText className="h-8 w-8" />
+                                        <span className="text-sm font-medium">Add or drag files</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 4. Location & 5. Criticality */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <FormField
                                     control={form.control}
@@ -180,6 +317,7 @@ export function AssetForm({ initialData, isEditing = false }: AssetFormProps) {
                                 />
                             </div>
 
+                            {/* 6. Description */}
                             <FormField
                                 control={form.control}
                                 name="description"
@@ -194,7 +332,23 @@ export function AssetForm({ initialData, isEditing = false }: AssetFormProps) {
                                 )}
                             />
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* 7. Year */}
+                            <FormField
+                                control={form.control}
+                                name="year"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Year</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" placeholder="e.g. 2023" {...field} value={field.value ?? ''} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* 8. Manufacturer, 9. Model, 10. Serial Number */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <FormField
                                     control={form.control}
                                     name="manufacturer"
@@ -234,145 +388,9 @@ export function AssetForm({ initialData, isEditing = false }: AssetFormProps) {
                                         </FormItem>
                                     )}
                                 />
-                                <FormField
-                                    control={form.control}
-                                    name="vinNumber"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>VIN Number</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="Optional" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <FormField
-                                    control={form.control}
-                                    name="purchaseDate"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-col">
-                                            <FormLabel>Purchase Date</FormLabel>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <FormControl>
-                                                        <Button
-                                                            variant={"outline"}
-                                                            className={cn(
-                                                                "w-full pl-3 text-left font-normal bg-background",
-                                                                !field.value && "text-muted-foreground"
-                                                            )}
-                                                        >
-                                                            {field.value ? (
-                                                                format(field.value, "PPP")
-                                                            ) : (
-                                                                <span>Pick a date</span>
-                                                            )}
-                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                    </FormControl>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0" align="start">
-                                                    <Calendar
-                                                        mode="single"
-                                                        selected={field.value}
-                                                        onSelect={field.onChange}
-                                                        disabled={(date) =>
-                                                            date > new Date()
-                                                        }
-                                                        initialFocus
-                                                    />
-                                                </PopoverContent>
-                                            </Popover>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="warrantyEndDate"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-col">
-                                            <FormLabel>Warranty End Date</FormLabel>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <FormControl>
-                                                        <Button
-                                                            variant={"outline"}
-                                                            className={cn(
-                                                                "w-full pl-3 text-left font-normal bg-background",
-                                                                !field.value && "text-muted-foreground"
-                                                            )}
-                                                        >
-                                                            {field.value ? (
-                                                                format(field.value, "PPP")
-                                                            ) : (
-                                                                <span>Pick a date</span>
-                                                            )}
-                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                    </FormControl>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0" align="start">
-                                                    <Calendar
-                                                        mode="single"
-                                                        selected={field.value}
-                                                        onSelect={field.onChange}
-                                                        initialFocus
-                                                    />
-                                                </PopoverContent>
-                                            </Popover>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <FormField
-                                    control={form.control}
-                                    name="purchasePrice"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Purchase Price ($)</FormLabel>
-                                            <FormControl>
-                                                <Input type="number" placeholder="0.00" {...field} value={field.value ?? ''} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="replacementCost"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Replacement Cost ($)</FormLabel>
-                                            <FormControl>
-                                                <Input type="number" placeholder="0.00" {...field} value={field.value ?? ''} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="annualDepreciation"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Annual Depreciation ($)</FormLabel>
-                                            <FormControl>
-                                                <Input type="number" placeholder="0.00" {...field} value={field.value ?? ''} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-
+                            {/* 11. Teams in Charge */}
                             <FormField
                                 control={form.control}
                                 name="teamsInCharge"
@@ -452,6 +470,7 @@ export function AssetForm({ initialData, isEditing = false }: AssetFormProps) {
                                 )}
                             />
 
+                            {/* 12. QR Code */}
                             <div className="space-y-4">
                                 <FormLabel>QR Code/Barcode</FormLabel>
                                 {barcodeMode === "auto" ? (
@@ -495,6 +514,7 @@ export function AssetForm({ initialData, isEditing = false }: AssetFormProps) {
                                 )}
                             </div>
 
+                            {/* 13. Asset Type & 14. Vendor */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <FormField
                                     control={form.control}
@@ -514,7 +534,7 @@ export function AssetForm({ initialData, isEditing = false }: AssetFormProps) {
                                     name="vendors"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Vendors</FormLabel>
+                                            <FormLabel>Vendor</FormLabel>
                                             <FormControl>
                                                 <Input placeholder="e.g. Vendor Name" {...field} />
                                             </FormControl>
@@ -524,6 +544,71 @@ export function AssetForm({ initialData, isEditing = false }: AssetFormProps) {
                                 />
                             </div>
 
+                            {/* 15. Parts */}
+                            <FormField
+                                control={form.control}
+                                name="parts"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Parts</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="e.g. Filter, Belt" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* 16. Parent Asset (Tree Dropdown) */}
+                            <FormField
+                                control={form.control}
+                                name="parentAssetId"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-col">
+                                        <FormLabel>Parent Asset</FormLabel>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        className={cn(
+                                                            "w-full justify-between bg-background",
+                                                            !field.value && "text-muted-foreground"
+                                                        )}
+                                                    >
+                                                        {field.value
+                                                            ? findAssetName(assetTree, field.value) || field.value
+                                                            : "Select parent asset"}
+                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[400px] p-0" align="start">
+                                                <Command>
+                                                    <CommandInput placeholder="Search assets..." />
+                                                    <CommandList>
+                                                        <CommandEmpty>No asset found.</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {assetTree.map((node) => (
+                                                                <AssetTreeItem
+                                                                    key={node.id}
+                                                                    node={node}
+                                                                    selectedValue={field.value}
+                                                                    onSelect={(id) => field.onChange(id)}
+                                                                />
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* 17. Notes */}
                             <FormField
                                 control={form.control}
                                 name="notes"
@@ -546,10 +631,82 @@ export function AssetForm({ initialData, isEditing = false }: AssetFormProps) {
                 <Button type="button" variant="outline" onClick={() => router.back()}>
                     Cancel
                 </Button>
-                <Button type="submit" form="asset-form">
+                <Button type="submit" form="asset-form" disabled={form.formState.isSubmitting} className="cursor-pointer">
+                    {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isEditing ? "Save Changes" : "Create Asset"}
                 </Button>
             </div>
         </div>
+    )
+}
+
+function findAssetName(nodes: AssetTreeNode[], id: string): string | undefined {
+    for (const node of nodes) {
+        if (node.id === id) return node.name
+        if (node.children) {
+            const found = findAssetName(node.children, id)
+            if (found) return found
+        }
+    }
+    return undefined
+}
+
+function AssetTreeItem({
+    node,
+    selectedValue,
+    onSelect,
+    level = 0
+}: {
+    node: AssetTreeNode
+    selectedValue?: string
+    onSelect: (id: string) => void
+    level?: number
+}) {
+    const [isExpanded, setIsExpanded] = useState(false)
+    const hasChildren = node.children && node.children.length > 0
+
+    return (
+        <>
+            <CommandItem
+                value={node.name}
+                onSelect={() => onSelect(node.id)}
+                className="flex items-center gap-2 cursor-pointer"
+                style={{ paddingLeft: `${(level * 16) + 8}px` }}
+            >
+                {hasChildren ? (
+                    <div
+                        className="p-0.5 hover:bg-muted rounded-sm cursor-pointer"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            setIsExpanded(!isExpanded)
+                        }}
+                    >
+                        {isExpanded ? (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        )}
+                    </div>
+                ) : (
+                    <span className="w-5" /> // Spacer for alignment
+                )}
+
+                <span className="flex-1 truncate">{node.name}</span>
+                {selectedValue === node.id && <Check className="ml-auto h-4 w-4" />}
+            </CommandItem>
+            {hasChildren && isExpanded && (
+                <>
+                    {node.children!.map((child) => (
+                        <AssetTreeItem
+                            key={child.id}
+                            node={child}
+                            selectedValue={selectedValue}
+                            onSelect={onSelect}
+                            level={level + 1}
+                        />
+                    ))}
+                </>
+            )}
+        </>
     )
 }

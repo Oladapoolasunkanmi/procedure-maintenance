@@ -1,6 +1,7 @@
+import { Suspense } from "react"
 import { AssetForm } from "@/components/forms/asset-form"
-import { assets } from "@/lib/data"
 import { notFound } from "next/navigation"
+import { apiClient } from "@/lib/axios"
 
 interface EditAssetPageProps {
     params: Promise<{
@@ -10,7 +11,25 @@ interface EditAssetPageProps {
 
 export default async function EditAssetPage({ params }: EditAssetPageProps) {
     const { id } = await params
-    const asset = assets.find((a) => a.id === id)
+
+    let asset = null;
+
+    try {
+        const payload = {
+            db_name: "andechser_maintenance_system",
+            coll_name: "assets",
+            filters: {
+                _id: id
+            }
+        };
+
+        const response = await apiClient.post('/api/v2/cosmosdb/query-items', payload);
+        if (response.data.items && response.data.items.length > 0) {
+            asset = response.data.items[0];
+        }
+    } catch (error) {
+        console.error("Failed to fetch asset for edit:", error);
+    }
 
     if (!asset) {
         return notFound()
@@ -22,21 +41,26 @@ export default async function EditAssetPage({ params }: EditAssetPageProps) {
         locationId: asset.locationId,
         criticality: asset.criticality,
         description: asset.description,
-        notes: "", // Not in mock data, default empty
-        purchaseDate: new Date(), // Not in mock data, default today
-        purchasePrice: 0, // Not in mock data
-        annualDepreciation: 0, // Not in mock data
-        warrantyEndDate: new Date(), // Not in mock data
-        vinNumber: "", // Not in mock data
-        replacementCost: 0, // Not in mock data
+        notes: asset.notes || "",
+        purchaseDate: asset.purchaseDate ? new Date(asset.purchaseDate) : new Date(),
+        purchasePrice: asset.purchasePrice || 0,
+        annualDepreciation: asset.annualDepreciation || 0,
+        warrantyEndDate: asset.warrantyEndDate ? new Date(asset.warrantyEndDate) : new Date(),
+        vinNumber: asset.vinNumber || "",
+        replacementCost: asset.replacementCost || 0,
         serialNumber: asset.serialNumber,
         model: asset.model,
         manufacturer: asset.manufacturer,
-        teamsInCharge: [], // Not in mock data
-        barcode: "", // Not in mock data
+        teamsInCharge: asset.teamsInCharge || [],
+        barcode: asset.barcode || "",
         assetType: asset.assetType,
-        vendors: "", // Not in mock data
+        vendors: asset.vendors || "",
+        parentAssetId: asset.parentAssetId,
     }
 
-    return <AssetForm initialData={initialData} isEditing />
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <AssetForm initialData={initialData} isEditing assetId={id} />
+        </Suspense>
+    )
 }

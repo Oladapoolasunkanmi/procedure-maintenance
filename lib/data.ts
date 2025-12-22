@@ -42,6 +42,9 @@ export interface Asset {
     vendors?: string[];
     status: "Online" | "Offline";
     image?: string;
+    subAssetsCount?: number;
+    year?: number;
+    parentAssetId?: string;
 }
 
 export interface WorkOrder {
@@ -86,6 +89,8 @@ export const assets: Asset[] = [
         manufacturer: "Cat",
         serialNumber: "356354363DFGDF",
         image: "/placeholder-forklift.png",
+        subAssetsCount: 4,
+        year: 2023,
     },
     {
         id: "a2",
@@ -96,6 +101,8 @@ export const assets: Asset[] = [
         model: "VSS Single Screw",
         manufacturer: "VSS",
         image: "/placeholder-compressor.png",
+        subAssetsCount: 4,
+        year: 2024,
     },
     {
         id: "a3",
@@ -106,6 +113,17 @@ export const assets: Asset[] = [
         model: "E043i",
         manufacturer: "Durr",
         image: "/placeholder-robot.png",
+        subAssetsCount: 4,
+        year: 2022,
+    },
+    {
+        id: "a4",
+        name: "Second Main HVAC System",
+        locationId: "l1",
+        criticality: "Medium",
+        status: "Online",
+        subAssetsCount: 4,
+        year: 2025,
     },
 ];
 
