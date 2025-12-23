@@ -1,0 +1,120 @@
+# Deploy a Node.js app to Azure Web Apps.
+# It builds and deploys on every push to main for each stage listed in the matrix.
+#
+# Prerequisites ─────────────────────────────────────────────
+#   1. Create a GitHub secret for every stage, following the
+#      pattern <STAGE>_AZURE_WEBAPP_PUBLISH_PROFILE
+#      e.g. DEV_AZURE_WEBAPP_PUBLISH_PROFILE, MAIN_AZURE_WEBAPP_PUBLISH_PROFILE
+#   2. Adjust AZURE_WEBAPP_NAME below if your app names differ
+#      between stages.  Everything else is stage-agnostic.
+#
+#   For details on Web Apps deploy action:
+#   https://github.com/Azure/webapps-deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [main]
+jobs:
+  ack:
+    runs-on: ubuntu-latest
+    environment:
+      name: main              # create this Environment in Settings → Environments
+      # url: https://portal.azure.com/   # optional: where reviewers can check the target
+    steps:
+      - run: echo "Awaiting human acknowledgment before deploying…"
+      
+  build-and-deploy:
+    name: Build & Deploy (${{ matrix.stage }})
+    runs-on: ubuntu-latest
+    
+    needs: ack                    
+    
+    strategy:
+      matrix:
+        stage: [MAIN]
+
+    env:
+      AZURE_WEBAPP_PACKAGE_PATH: './dist'
+      NODE_VERSION: '22.x'
+      ENV_STAGE_NAME: ${{ matrix.stage }}
+      AZURE_WEBAPP_NAME: 'warehouse-webapp'
+      
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Enable Corepack
+        run: corepack enable pnpm
+
+      - name: Activate pnpm 9.0.0
+        run: corepack prepare pnpm@9.0.0 --activate
+
+      - name: Prime pnpm store
+        run: pnpm store path --silent
+      
+      - name: Cache Next.js build output
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: next-cache-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Use Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Check pnpm
+        run: pnpm --version
+
+      - name: Install dependencies & build
+        env:
+          AZURE_AD_CLIENT_ID: ${{ secrets[format('{0}_AZURE_AD_CLIENT_ID', env.ENV_STAGE_NAME)] }}
+          AZURE_AD_CLIENT_SECRET: ${{ secrets[format('{0}_AZURE_AD_CLIENT_SECRET', env.ENV_STAGE_NAME)] }}
+          AZURE_AD_TENANT_ID: ${{ secrets[format('{0}_AZURE_AD_TENANT_ID', env.ENV_STAGE_NAME)] }}
+          AZURE_AD_AUTHORITY: ${{ secrets[format('{0}_AZURE_AD_AUTHORITY', env.ENV_STAGE_NAME)] }}
+          AZURE_AD_REDIRECT_URI: ${{ secrets[format('{0}_AZURE_AD_REDIRECT_URI', env.ENV_STAGE_NAME)] }}
+          AZURE_AD_SCOPES: ${{ secrets[format('{0}_AZURE_AD_SCOPES', env.ENV_STAGE_NAME)] }}
+        run: |
+          pnpm fetch
+          pnpm install --offline --no-frozen-lockfile
+          pnpm run --if-present build
+          rm -rf dist
+          mkdir -p dist
+          rsync -a .next/standalone/ dist/
+          mkdir -p dist/.next/static
+          rsync -a .next/static/ dist/.next/static/
+          if [ -d public ]; then rsync -a public/ dist/public/; fi
+          rm -rf dist/node_modules dist/package-lock.json dist/pnpm-lock.yaml dist/.npmrc
+          node - <<'NODE'
+          import { readFileSync, writeFileSync } from "node:fs";
+          import { join } from "node:path";
+          const pkg = JSON.parse(readFileSync("package.json", "utf8"));
+          const {
+            type: _omitType,
+            devDependencies: _omitDev,
+            scripts: pkgScripts = {},
+            packageManager: _omitManager,
+            ...rest
+          } = pkg;
+          const distPkg = {
+            ...rest,
+            private: true,
+            type: pkg.type ?? "module",
+            packageManager: pkg.packageManager ?? "pnpm@9.0.0",
+            scripts: {
+              start: "node server.js"
+            },
+            dependencies: pkg.dependencies ?? {},
+          };
+          writeFileSync(join("dist", "package.json"), JSON.stringify(distPkg, null, 2));
+          NODE
+          # pnpm test --if-present
+
+      - name: Deploy to Azure Web App (${{ env.ENV_STAGE_NAME }})
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets[format('{0}_AZURE_WEBAPP_PUBLISH_PROFILE', env.ENV_STAGE_NAME)] }}
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}

@@ -1,4 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar"
+import { getSessionOrNull } from "@/auth/session"
 import {
     SidebarInset,
     SidebarProvider,
@@ -14,14 +15,20 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
+    const session = await getSessionOrNull();
+    const user = session ? {
+        name: session.name,
+        email: session.email || session.preferred_username,
+    } : undefined;
+
     return (
         <SidebarProvider>
-            <AppSidebar />
+            <AppSidebar user={user} />
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 gradient-to-b from-e84a0024 to-white">
                     <div className="flex items-center gap-2 px-4">

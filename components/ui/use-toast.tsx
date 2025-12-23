@@ -15,6 +15,24 @@ type ToasterToast = {
     onOpenChange?: (open: boolean) => void
 }
 
+type Action =
+    | {
+        type: "ADD_TOAST"
+        toast: ToasterToast
+    }
+    | {
+        type: "UPDATE_TOAST"
+        toast: Partial<ToasterToast>
+    }
+    | {
+        type: "DISMISS_TOAST"
+        toastId?: string
+    }
+    | {
+        type: "REMOVE_TOAST"
+        toastId?: string
+    }
+
 let count = 0
 
 function genId() {
@@ -22,12 +40,7 @@ function genId() {
     return count.toString()
 }
 
-type ActionType = {
-    ADD_TOAST: "ADD_TOAST"
-    UPDATE_TOAST: "UPDATE_TOAST"
-    DISMISS_TOAST: "DISMISS_TOAST"
-    REMOVE_TOAST: "REMOVE_TOAST"
-}
+
 
 let memoryState: State = { toasts: [] }
 
@@ -37,14 +50,14 @@ interface State {
 
 const listeners: Array<(state: State) => void> = []
 
-function dispatch(action: any) {
+function dispatch(action: Action) {
     memoryState = reducer(memoryState, action)
     listeners.forEach((listener) => {
         listener(memoryState)
     })
 }
 
-const reducer = (state: State, action: any): State => {
+const reducer = (state: State, action: Action): State => {
     switch (action.type) {
         case "ADD_TOAST":
             return {

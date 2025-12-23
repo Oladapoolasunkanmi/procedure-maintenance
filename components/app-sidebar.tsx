@@ -114,7 +114,15 @@ const navSecondary = [
     },
 ]
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+    user?: {
+        name?: string;
+        email?: string;
+        image?: string;
+    };
+}
+
+export function AppSidebar({ user, ...props }: AppSidebarProps) {
     return (
         <Sidebar collapsible="icon" {...props}>
 
@@ -175,8 +183,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                     <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                                 </Avatar>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
-                                    <span className="truncate font-semibold">Zach Brown</span>
-                                    <span className="truncate text-xs">zach@example.com</span>
+                                    <span className="truncate font-semibold">{user?.name || "User"}</span>
+                                    <span className="truncate text-xs">{user?.email || "user@example.com"}</span>
                                 </div>
                                 <Settings className="ml-auto size-4" />
                             </Link>

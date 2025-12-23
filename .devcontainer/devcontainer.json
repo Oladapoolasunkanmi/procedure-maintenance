@@ -1,0 +1,20 @@
+{
+    "name": "endpoint-warehouse-v2-front",
+    "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+    "postCreateCommand": "bash -lc \"corepack enable pnpm && pnpm install\"",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "openai.chatgpt",
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "ms-vscode.vscode-typescript-next",
+                "bradlc.vscode-tailwindcss",
+                "pomdtr.excalidraw-editor"
+            ]
+        }
+    },
+    "forwardPorts": [
+        3000
+    ]
+}
