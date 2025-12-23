@@ -38,9 +38,37 @@ export function TeamsTable() {
     const [searchTerm, setSearchTerm] = useState("")
     const [isUploading, setIsUploading] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
-    const [users] = useState<User[]>(initialUsers)
+    const [users, setUsers] = useState<User[]>(initialUsers)
     const [teams, setTeams] = useState<Team[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [currentUser, setCurrentUser] = useState<any>(null)
+
+    useEffect(() => {
+        fetch('/api/auth/me')
+            .then(res => {
+                if (res.ok) return res.json()
+                return null
+            })
+            .then(data => {
+                if (data) {
+                    setCurrentUser(data)
+                    setUsers(prev => {
+                        if (!prev.find(u => u.id === data.sub)) {
+                            return [...prev, {
+                                id: data.sub,
+                                name: data.name || "Current User",
+                                email: data.email || "",
+                                avatar: "",
+                                role: "Administrator",
+                                lastVisit: "Just now"
+                            }]
+                        }
+                        return prev
+                    })
+                }
+            })
+            .catch(err => console.error("Failed to fetch user", err))
+    }, [])
 
     // Fetch teams on mount
     const fetchTeams = async () => {
@@ -132,12 +160,20 @@ export function TeamsTable() {
         setIsSaving(true)
         try {
             const isEditing = !!newTeam.id
+            const adminId = newTeam.administratorId || currentUser?.sub || users[0]?.id
+
+            // Ensure admin is in memberIds
+            const currentMembers = newTeam.memberIds || []
+            if (adminId && !currentMembers.includes(adminId)) {
+                currentMembers.push(adminId)
+            }
+
             const teamData = {
                 ...newTeam,
                 id: isEditing ? newTeam.id : `t${Date.now()}`,
-                memberIds: newTeam.memberIds || [],
+                memberIds: currentMembers,
                 createdAt: isEditing ? newTeam.createdAt : new Date().toISOString(),
-                administratorId: newTeam.administratorId || users[0]?.id
+                administratorId: adminId
             }
 
             const url = isEditing ? "/api/teams" : "/api/teams"

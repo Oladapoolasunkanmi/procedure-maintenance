@@ -29,7 +29,34 @@ export default function TeamDetailPage() {
 
     const [team, setTeam] = useState<Team | null>(null)
     const [isLoading, setIsLoading] = useState(true)
-    const [users] = useState(initialUsers)
+    const [users, setUsers] = useState(initialUsers)
+
+    useEffect(() => {
+        // Fetch current user details if logged on
+        fetch('/api/auth/me')
+            .then(res => {
+                if (res.ok) return res.json()
+                return null
+            })
+            .then(data => {
+                if (data) {
+                    setUsers(prev => {
+                        if (!prev.find(u => u.id === data.sub)) {
+                            return [...prev, {
+                                id: data.sub,
+                                name: data.name || "Current User",
+                                email: data.email || "",
+                                avatar: "",
+                                role: "Administrator",
+                                lastVisit: "Just now"
+                            }]
+                        }
+                        return prev
+                    })
+                }
+            })
+            .catch(err => console.error("Failed to fetch user", err))
+    }, [])
     const [assets, setAssets] = useState<any[]>([])
     const [locations, setLocations] = useState<any[]>([])
     const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false)
@@ -95,7 +122,11 @@ export default function TeamDetailPage() {
 
     // Safely handle memberIds if undefined in some data
     const memberIds = team.memberIds || []
-    const members = users.filter(u => memberIds.includes(u.id))
+    // Ensure admin is included in the set of IDs to display
+    const uniqueMemberIds = Array.from(new Set([...memberIds, team.administratorId].filter(Boolean)))
+
+    // Filter users to get the member objects
+    const members = users.filter(u => uniqueMemberIds.includes(u.id))
     const admin = users.find(u => u.id === team.administratorId)
 
     return (
