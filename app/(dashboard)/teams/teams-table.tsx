@@ -1,0 +1,314 @@
+"use client"
+
+import { useState } from "react"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { MoreVertical, Plus, Search, Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/components/ui/use-toast"
+import { User, Team, users as initialUsers, teams as initialTeams } from "@/lib/data"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
+
+export function TeamsTable() {
+    const [searchTerm, setSearchTerm] = useState("")
+    const [users] = useState<User[]>(initialUsers)
+    const [teams, setTeams] = useState<Team[]>(initialTeams)
+
+    // Dialog states
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+    const [isAddMembersDialogOpen, setIsAddMembersDialogOpen] = useState(false)
+    const [newTeam, setNewTeam] = useState<Partial<Team>>({
+        color: "blue",
+        isEscalation: false
+    })
+
+    const handleCreateTeam = () => {
+        // Logic to save team would go here.
+        // For now, we simulate success and open the next dialog.
+        const createdTeam: Team = {
+            id: `t${Date.now()}`,
+            name: newTeam.name || "New Team",
+            description: newTeam.description,
+            color: newTeam.color,
+            isEscalation: newTeam.isEscalation,
+            memberIds: [],
+            createdAt: new Date().toISOString()
+        }
+        setTeams([...teams, createdTeam])
+        setIsCreateDialogOpen(false)
+        setIsAddMembersDialogOpen(true)
+    }
+
+    const filteredTeams = teams.filter(team =>
+        team.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+
+    const colors = ["blue", "green", "yellow", "red", "teal", "pink", "purple", "orange"]
+
+
+    const [inviteEmail, setInviteEmail] = useState("")
+    const [isInviting, setIsInviting] = useState(false)
+    const router = useRouter()
+    const { toast } = useToast()
+
+    const handleInviteMember = async () => {
+        setIsInviting(true)
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000))
+
+        toast({
+            title: "Member Invited",
+            description: `Invitation sent to ${inviteEmail}`,
+        })
+
+        setIsInviting(false)
+        setIsAddMembersDialogOpen(false)
+        setInviteEmail("")
+    }
+
+    return (
+        <div className="space-y-4">
+            {/* ... (Search and Create Button remain same) ... */}
+            <div className="flex items-center justify-between">
+                <div className="relative w-72">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search Teams"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-8"
+                    />
+                </div>
+                <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-orange-600 hover:bg-orange-700 text-white">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Team
+                </Button>
+            </div>
+
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Administrator</TableHead>
+                            <TableHead>Members</TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredTeams.map((team) => {
+                            const admin = users.find(u => u.id === team.administratorId)
+                            return (
+                                <TableRow
+                                    key={team.id}
+                                    className="cursor-pointer hover:bg-muted/50"
+                                    onClick={() => router.push(`/teams/${team.id}`)}
+                                >
+                                    <TableCell className="font-medium">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold`} style={{ backgroundColor: team.color === 'blue' ? '#3b82f6' : team.color }}>
+                                                {team.name.substring(0, 1).toUpperCase()}
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold">{team.name}</span>
+                                                <span className="text-xs text-muted-foreground">{team.description}</span>
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        {admin ? (
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="h-6 w-6">
+                                                    <AvatarImage src={admin.avatar} />
+                                                    <AvatarFallback>{admin.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                                </Avatar>
+                                                <span>{admin.name}</span>
+                                            </div>
+                                        ) : "-"}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex -space-x-2">
+                                                {team.memberIds.slice(0, 3).map(mid => {
+                                                    const m = users.find(u => u.id === mid)
+                                                    if (!m) return null
+                                                    return (
+                                                        <Avatar key={mid} className="h-6 w-6 border-2 border-background">
+                                                            <AvatarImage src={m.avatar} />
+                                                            <AvatarFallback>{m.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                                        </Avatar>
+                                                    )
+                                                })}
+                                            </div>
+                                            <span className="text-sm text-muted-foreground">{team.memberIds.length} Member{team.memberIds.length !== 1 && 's'}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                                                    <MoreVertical className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem>Edit Team</DropdownMenuItem>
+                                                <DropdownMenuItem className="text-destructive">Delete Team</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        })}
+                    </TableBody>
+                </Table>
+            </div>
+
+            {/* Create Team Dialog (Unchanged logic, just keeping structure valid) */}
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <DialogTitle>New Team</DialogTitle>
+                    </DialogHeader>
+                    {/* ... (Create Dialog Content same as before) ... */}
+                    <div className="space-y-6 py-4">
+                        <div className="flex justify-center">
+                            <div className="h-24 w-24 rounded-full bg-blue-100 flex items-center justify-center relative">
+                                <div className={`h-24 w-24 rounded-full flex items-center justify-center text-white text-3xl font-bold`} style={{ backgroundColor: newTeam.color === 'blue' ? '#3b82f6' : newTeam.color }}>
+                                    {(newTeam.name || "+").substring(0, 1).toUpperCase()}
+                                </div>
+                                <div className="absolute top-0 right-0 bg-green-500 rounded-full p-1 text-white border-2 border-white">
+                                    <Plus className="h-4 w-4" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Team Name (Required)</Label>
+                            <Input
+                                placeholder="Enter Team Name"
+                                value={newTeam.name || ""}
+                                onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Description</Label>
+                            <Textarea
+                                placeholder="What's this group about?"
+                                value={newTeam.description || ""}
+                                onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Team Color</Label>
+                            <div className="flex gap-2">
+                                {colors.map(color => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        className={`w-8 h-8 rounded-full border-2 ${newTeam.color === color ? 'border-black' : 'border-transparent'}`}
+                                        style={{ backgroundColor: color === 'blue' ? '#3b82f6' : color }}
+                                        onClick={() => setNewTeam({ ...newTeam, color })}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Set as Escalation Team</Label>
+                            <p className="text-sm text-muted-foreground mb-2">Should this Team be automatically notified about certain events?</p>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="escalation"
+                                    checked={newTeam.isEscalation}
+                                    onCheckedChange={(c) => setNewTeam({ ...newTeam, isEscalation: c as boolean })}
+                                />
+                                <Label htmlFor="escalation" className="font-normal">Critical Parts</Label>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
+                        <Button
+                            onClick={handleCreateTeam}
+                            disabled={!newTeam.name}
+                            className="bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:opacity-50"
+                        >
+                            Create Team
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Add Members Dialog - Updated */}
+            <Dialog open={isAddMembersDialogOpen} onOpenChange={setIsAddMembersDialogOpen}>
+                <DialogContent className="sm:max-w-[500px] h-[600px] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>Add Members to the Team</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 flex-1 space-y-4">
+                        <Input
+                            placeholder="Start typing or paste email..."
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                        />
+
+                        {!inviteEmail ? (
+                            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground -mt-10">
+                                <div className="h-16 w-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                                    <Search className="h-8 w-8 text-orange-600" />
+                                </div>
+                                <p>No one else to add.</p>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full space-y-4 -mt-10">
+                                <div className="h-20 w-20 bg-orange-50 rounded-full flex items-center justify-center mb-2">
+                                    <Search className="h-10 w-10 text-orange-500" />
+                                </div>
+                                <p className="text-muted-foreground text-center px-4">
+                                    No results found for &quot;{inviteEmail}&quot;.
+                                </p>
+                                <Button
+                                    className="bg-orange-600 hover:bg-orange-700 text-white w-full max-w-sm mt-4"
+                                    onClick={handleInviteMember}
+                                    disabled={isInviting}
+                                >
+                                    {isInviting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Invite &quot;{inviteEmail}&quot;?
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsAddMembersDialogOpen(false)} className="text-orange-600">Skip</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div>
+    )
+}

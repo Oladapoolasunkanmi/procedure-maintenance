@@ -7,6 +7,8 @@ export interface User {
     name: string;
     email: string;
     avatar?: string;
+    role?: string;
+    lastVisit?: string;
 }
 
 export interface Location {
@@ -72,9 +74,9 @@ export interface WorkOrder {
 }
 
 export const users: User[] = [
-    { id: "u1", name: "Zach Brown", email: "zach@example.com", avatar: "https://github.com/shadcn.png" },
-    { id: "u2", name: "Alice Smith", email: "alice@example.com" },
-    { id: "u3", name: "Bob Jones", email: "bob@example.com" },
+    { id: "u1", name: "Zach Brown", email: "zach@example.com", avatar: "https://github.com/shadcn.png", role: "Administrator", lastVisit: "Today" },
+    { id: "u2", name: "Alice Smith", email: "alice@example.com", role: "Full User", lastVisit: "Yesterday" },
+    { id: "u3", name: "Bob Jones", email: "bob@example.com", role: "Limited User", lastVisit: "2 days ago" },
 ];
 
 export const locations: Location[] = [
@@ -264,4 +266,36 @@ export const requests: Request[] = [
         status: "Pending",
         createdAt: "2025-12-19T11:45:00",
     },
+];
+
+export interface Team {
+    id: string;
+    name: string;
+    description?: string;
+    color?: string;
+    isEscalation?: boolean;
+    administratorId?: string; // User ID
+    memberIds: string[]; // User IDs
+    createdAt: string;
+}
+
+export const teams: Team[] = [
+    {
+        id: "t1",
+        name: "Engineering",
+        description: "All engineering team",
+        color: "green",
+        administratorId: "u1",
+        memberIds: ["u1"],
+        createdAt: "2025-01-01T00:00:00",
+    },
+    {
+        id: "t2",
+        name: "Maintenance",
+        description: "General maintenance staff",
+        color: "blue",
+        administratorId: "u2",
+        memberIds: ["u2", "u3"],
+        createdAt: "2025-01-02T00:00:00",
+    }
 ];
