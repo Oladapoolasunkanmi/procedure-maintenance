@@ -17,6 +17,11 @@ export interface Location {
     staffCount?: number;
     teamsInCharge?: string[];
     image?: string;
+    barcode?: string;
+    files?: string[];
+    vendors?: string[];
+    parentLocationId?: string;
+    subLocationsCount?: number;
 }
 
 export interface Asset {

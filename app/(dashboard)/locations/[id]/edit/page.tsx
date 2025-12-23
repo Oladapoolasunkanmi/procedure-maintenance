@@ -1,6 +1,7 @@
+import { Suspense } from "react"
 import { LocationForm } from "@/components/forms/location-form"
-import { locations } from "@/lib/data"
 import { notFound } from "next/navigation"
+import { apiClient } from "@/lib/axios"
 
 interface EditLocationPageProps {
     params: Promise<{
@@ -10,7 +11,25 @@ interface EditLocationPageProps {
 
 export default async function EditLocationPage({ params }: EditLocationPageProps) {
     const { id } = await params
-    const location = locations.find((l) => l.id === id)
+
+    let location = null;
+
+    try {
+        const payload = {
+            db_name: "andechser_maintenance_system",
+            coll_name: "locations",
+            filters: {
+                _id: id
+            }
+        };
+
+        const response = await apiClient.post('/api/v2/cosmosdb/query-items', payload);
+        if (response.data.items && response.data.items.length > 0) {
+            location = response.data.items[0];
+        }
+    } catch (error) {
+        console.error("Failed to fetch location for edit:", error);
+    }
 
     if (!location) {
         return notFound()
@@ -21,9 +40,15 @@ export default async function EditLocationPage({ params }: EditLocationPageProps
         name: location.name,
         address: location.address,
         description: location.description,
-        staffCount: location.staffCount,
         teamsInCharge: location.teamsInCharge || [],
+        barcode: location.barcode || "",
+        vendors: Array.isArray(location.vendors) ? location.vendors.join(", ") : (location.vendors || ""),
+        parentLocationId: location.parentLocationId,
     }
 
-    return <LocationForm initialData={initialData} isEditing />
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <LocationForm initialData={initialData} isEditing locationId={id} />
+        </Suspense>
+    )
 }
