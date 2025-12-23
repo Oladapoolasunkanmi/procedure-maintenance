@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import {
     Table,
     TableBody,
@@ -33,10 +33,44 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 
+
 export function TeamsTable() {
     const [searchTerm, setSearchTerm] = useState("")
+    const [isUploading, setIsUploading] = useState(false)
+    const fileInputRef = useRef<HTMLInputElement>(null)
     const [users] = useState<User[]>(initialUsers)
-    const [teams, setTeams] = useState<Team[]>(initialTeams)
+    const [teams, setTeams] = useState<Team[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+
+    // Fetch teams on mount
+    const fetchTeams = async () => {
+        setIsLoading(true)
+        try {
+            const res = await fetch("/api/teams")
+            const data = await res.json()
+            if (data.items) {
+                // Map API response items to our Team interface
+                const mappedTeams = data.items.map((item: any) => ({
+                    ...item,
+                    id: item._id || item.id, // Ensure id is mapped
+                }))
+                setTeams(mappedTeams)
+            }
+        } catch (error) {
+            console.error("Failed to fetch teams:", error)
+            toast({
+                title: "Error",
+                description: "Failed to load teams",
+                variant: "destructive"
+            })
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchTeams()
+    }, [])
 
     // Dialog states
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -46,21 +80,145 @@ export function TeamsTable() {
         isEscalation: false
     })
 
-    const handleCreateTeam = () => {
-        // Logic to save team would go here.
-        // For now, we simulate success and open the next dialog.
-        const createdTeam: Team = {
-            id: `t${Date.now()}`,
-            name: newTeam.name || "New Team",
-            description: newTeam.description,
-            color: newTeam.color,
-            isEscalation: newTeam.isEscalation,
-            memberIds: [],
-            createdAt: new Date().toISOString()
+    // Delete Confirmation State
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [teamToDelete, setTeamToDelete] = useState<string | null>(null)
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        setIsUploading(true)
+        try {
+            // Sanitize filename
+            const parts = file.name.split('.')
+            const ext = parts.pop()
+            const base = parts.join('.')
+            const sanitizedBase = base.replace(/[^a-zA-Z0-9]/g, "")
+            const path = `andechser_maintenance_system/${sanitizedBase}.${ext}`
+
+            const formData = new FormData()
+            formData.append("path", path)
+            formData.append("file", file)
+
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+            })
+
+            if (!res.ok) throw new Error("Upload failed")
+
+            const data = await res.json()
+            setNewTeam(prev => ({ ...prev, image: data.path }))
+            toast({
+                title: "Image uploaded",
+                description: "Team icon updated successfully",
+            })
+        } catch (error) {
+            console.error(error)
+            toast({
+                title: "Upload failed",
+                description: "Failed to upload image",
+                variant: "destructive"
+            })
+        } finally {
+            setIsUploading(false)
         }
-        setTeams([...teams, createdTeam])
-        setIsCreateDialogOpen(false)
-        setIsAddMembersDialogOpen(true)
+    }
+
+    const [isSaving, setIsSaving] = useState(false)
+
+    const handleCreateTeam = async () => {
+        setIsSaving(true)
+        try {
+            const isEditing = !!newTeam.id
+            const teamData = {
+                ...newTeam,
+                id: isEditing ? newTeam.id : `t${Date.now()}`,
+                memberIds: newTeam.memberIds || [],
+                createdAt: isEditing ? newTeam.createdAt : new Date().toISOString(),
+                administratorId: newTeam.administratorId || users[0]?.id
+            }
+
+            const url = isEditing ? "/api/teams" : "/api/teams"
+            const method = isEditing ? "PUT" : "POST"
+
+            const res = await fetch(url, {
+                method: method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(teamData)
+            })
+
+            if (!res.ok) {
+                const err = await res.json()
+                throw new Error(err.error || `Failed to ${isEditing ? "upate" : "create"} team`)
+            }
+
+            await fetchTeams()
+
+            setIsCreateDialogOpen(false)
+            if (!isEditing) {
+                setIsAddMembersDialogOpen(true)
+            }
+
+            toast({
+                title: isEditing ? "Team Updated" : "Team Created",
+                description: `${teamData.name || "Team"} has been ${isEditing ? "updated" : "created"} successfully.`
+            })
+            // Reset state
+            setNewTeam({ color: "blue", isEscalation: false })
+        } catch (error: any) {
+            console.error(error)
+            toast({
+                title: "Error",
+                description: error.message || "Operation failed",
+                variant: "destructive"
+            })
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    const handleDeleteClick = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation()
+        setTeamToDelete(id)
+        setIsDeleteDialogOpen(true)
+    }
+
+    const confirmDeleteTeam = async () => {
+        if (!teamToDelete) return
+
+        try {
+            const res = await fetch(`/api/teams?id=${teamToDelete}`, {
+                method: "DELETE"
+            })
+
+            if (!res.ok) {
+                throw new Error("Failed to delete team")
+            }
+
+            await fetchTeams()
+            toast({
+                title: "Team Deleted",
+                description: "The team has been removed."
+            })
+        } catch (error) {
+            console.error(error)
+            toast({
+                title: "Error",
+                description: "Failed to delete team",
+                variant: "destructive"
+            })
+        } finally {
+            setIsDeleteDialogOpen(false)
+            setTeamToDelete(null)
+        }
+    }
+
+    const openEditDialog = (team: Team, e: React.MouseEvent) => {
+        e.stopPropagation()
+        setNewTeam(team)
+        setIsCreateDialogOpen(true)
     }
 
     const filteredTeams = teams.filter(team =>
@@ -120,69 +278,101 @@ export function TeamsTable() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredTeams.map((team) => {
-                            const admin = users.find(u => u.id === team.administratorId)
-                            return (
-                                <TableRow
-                                    key={team.id}
-                                    className="cursor-pointer hover:bg-muted/50"
-                                    onClick={() => router.push(`/teams/${team.id}`)}
-                                >
-                                    <TableCell className="font-medium">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold`} style={{ backgroundColor: team.color === 'blue' ? '#3b82f6' : team.color }}>
-                                                {team.name.substring(0, 1).toUpperCase()}
+                        {isLoading ? (
+                            <TableRow>
+                                <TableCell colSpan={4} className="h-64 text-center">
+                                    <div className="flex flex-col items-center justify-center h-full">
+                                        <Loader2 className="h-10 w-10 animate-spin text-primary mb-2" />
+                                        <p className="text-muted-foreground text-sm">Loading teams...</p>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ) : filteredTeams.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={4} className="h-48 text-center text-muted-foreground">
+                                    No teams found.
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            filteredTeams.map((team) => {
+                                const admin = users.find(u => u.id === team.administratorId)
+                                return (
+                                    <TableRow
+                                        key={team.id}
+                                        className="cursor-pointer hover:bg-muted/50"
+                                        onClick={() => router.push(`/teams/${team._id || team.id}`)}
+                                    >
+                                        <TableCell className="font-medium">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold overflow-hidden relative`} style={{ backgroundColor: team.image ? 'transparent' : (team.color === 'blue' ? '#3b82f6' : team.color) }}>
+                                                    {team.image ? (
+                                                        <img
+                                                            src={`/api/image?path=${encodeURIComponent(team.image)}`}
+                                                            alt={team.name}
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        team.name.substring(0, 1).toUpperCase()
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="font-semibold">{team.name}</span>
+                                                    <span className="text-xs text-muted-foreground">{team.description}</span>
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="font-semibold">{team.name}</span>
-                                                <span className="text-xs text-muted-foreground">{team.description}</span>
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        {admin ? (
+                                        </TableCell>
+                                        <TableCell>
+                                            {admin ? (
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar className="h-6 w-6">
+                                                        <AvatarImage src={admin.avatar} />
+                                                        <AvatarFallback>{admin.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                                    </Avatar>
+                                                    <span>{admin.name}</span>
+                                                </div>
+                                            ) : "-"}
+                                        </TableCell>
+                                        <TableCell>
                                             <div className="flex items-center gap-2">
-                                                <Avatar className="h-6 w-6">
-                                                    <AvatarImage src={admin.avatar} />
-                                                    <AvatarFallback>{admin.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                                </Avatar>
-                                                <span>{admin.name}</span>
+                                                <div className="flex -space-x-2">
+                                                    {team.memberIds.slice(0, 3).map(mid => {
+                                                        const m = users.find(u => u.id === mid)
+                                                        if (!m) return null
+                                                        return (
+                                                            <Avatar key={mid} className="h-6 w-6 border-2 border-background">
+                                                                <AvatarImage src={m.avatar} />
+                                                                <AvatarFallback>{m.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                                            </Avatar>
+                                                        )
+                                                    })}
+                                                </div>
+                                                <span className="text-sm text-muted-foreground">{team.memberIds.length} Member{team.memberIds.length !== 1 && 's'}</span>
                                             </div>
-                                        ) : "-"}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex -space-x-2">
-                                                {team.memberIds.slice(0, 3).map(mid => {
-                                                    const m = users.find(u => u.id === mid)
-                                                    if (!m) return null
-                                                    return (
-                                                        <Avatar key={mid} className="h-6 w-6 border-2 border-background">
-                                                            <AvatarImage src={m.avatar} />
-                                                            <AvatarFallback>{m.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                                        </Avatar>
-                                                    )
-                                                })}
-                                            </div>
-                                            <span className="text-sm text-muted-foreground">{team.memberIds.length} Member{team.memberIds.length !== 1 && 's'}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
-                                                    <MoreVertical className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem>Edit Team</DropdownMenuItem>
-                                                <DropdownMenuItem className="text-destructive">Delete Team</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            )
-                        })}
+                                        </TableCell>
+                                        <TableCell>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={(e) => openEditDialog(team, e)}>
+                                                        Edit Team
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        className="text-destructive"
+                                                        onClick={(e) => handleDeleteClick(team.id, e)}
+                                                    >
+                                                        Delete Team
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            }))
+                        }
                     </TableBody>
                 </Table>
             </div>
@@ -191,18 +381,40 @@ export function TeamsTable() {
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
-                        <DialogTitle>New Team</DialogTitle>
+                        <DialogTitle>{newTeam.id ? "Edit Team" : "New Team"}</DialogTitle>
                     </DialogHeader>
                     {/* ... (Create Dialog Content same as before) ... */}
                     <div className="space-y-6 py-4">
                         <div className="flex justify-center">
-                            <div className="h-24 w-24 rounded-full bg-blue-100 flex items-center justify-center relative">
-                                <div className={`h-24 w-24 rounded-full flex items-center justify-center text-white text-3xl font-bold`} style={{ backgroundColor: newTeam.color === 'blue' ? '#3b82f6' : newTeam.color }}>
-                                    {(newTeam.name || "+").substring(0, 1).toUpperCase()}
-                                </div>
-                                <div className="absolute top-0 right-0 bg-green-500 rounded-full p-1 text-white border-2 border-white">
-                                    <Plus className="h-4 w-4" />
-                                </div>
+                            <div
+                                className="h-24 w-24 rounded-full bg-blue-100 flex items-center justify-center relative cursor-pointer hover:opacity-90 transition-opacity overflow-hidden"
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={handleFileUpload}
+                                />
+                                {isUploading ? (
+                                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                                ) : newTeam.image ? (
+                                    <img
+                                        src={newTeam.image.startsWith("andechser_") ? `/api/image?path=${encodeURIComponent(newTeam.image)}` : newTeam.image}
+                                        alt="Team Icon"
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    <>
+                                        <div className={`h-24 w-24 rounded-full flex items-center justify-center text-white text-3xl font-bold`} style={{ backgroundColor: newTeam.color === 'blue' ? '#3b82f6' : newTeam.color }}>
+                                            {(newTeam.name || "+").substring(0, 1).toUpperCase()}
+                                        </div>
+                                        <div className="absolute top-0 right-0 bg-green-500 rounded-full p-1 text-white border-2 border-white">
+                                            <Plus className="h-4 w-4" />
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
 
@@ -256,10 +468,11 @@ export function TeamsTable() {
                         <Button variant="ghost" onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
                         <Button
                             onClick={handleCreateTeam}
-                            disabled={!newTeam.name}
-                            className="bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:opacity-50"
+                            disabled={!newTeam.name || isSaving}
+                            className="bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50"
                         >
-                            Create Team
+                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {newTeam.id ? "Save Changes" : "Create Team"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -306,6 +519,20 @@ export function TeamsTable() {
                     </div>
                     <DialogFooter>
                         <Button variant="ghost" onClick={() => setIsAddMembersDialogOpen(false)} className="text-orange-600">Skip</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Delete Team</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <p>Are you sure you want to delete this team? This action cannot be undone.</p>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+                        <Button variant="destructive" onClick={confirmDeleteTeam}>Delete</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

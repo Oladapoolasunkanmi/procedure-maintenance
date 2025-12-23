@@ -270,12 +270,14 @@ export const requests: Request[] = [
 
 export interface Team {
     id: string;
+    _id?: string;
     name: string;
     description?: string;
     color?: string;
     isEscalation?: boolean;
     administratorId?: string; // User ID
     memberIds: string[]; // User IDs
+    image?: string;
     createdAt: string;
 }
 

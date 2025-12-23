@@ -77,6 +77,7 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
     const searchParams = useSearchParams()
     const [barcodeMode, setBarcodeMode] = useState<"auto" | "manual">("auto")
     const [locationTree, setLocationTree] = useState<LocationTreeNode[]>([])
+    const [teams, setTeams] = useState<any[]>([])
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema) as any,
@@ -84,7 +85,8 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
             name: searchParams.get("name") || "",
             address: "",
             description: "",
-            teamsInCharge: [],
+            // If teamId is present in URL, pre-select it
+            teamsInCharge: searchParams.get("teamId") ? [searchParams.get("teamId")!] : [],
             barcode: "",
             vendors: "",
             parentLocationId: searchParams.get("parentId") || undefined,
@@ -131,7 +133,20 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
             }
         }
 
+        const fetchTeams = async () => {
+            try {
+                const res = await fetch('/api/teams')
+                const data = await res.json()
+                if (data.items) {
+                    setTeams(data.items.map((t: any) => ({ ...t, id: t._id || t.id })))
+                }
+            } catch (error) {
+                console.error("Failed to fetch teams:", error)
+            }
+        }
+
         fetchLocations()
+        fetchTeams()
     }, [])
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -287,27 +302,27 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                                     <CommandList>
                                                         <CommandEmpty>No team found.</CommandEmpty>
                                                         <CommandGroup>
-                                                            {users.map((user) => (
+                                                            {teams.map((team) => (
                                                                 <CommandItem
-                                                                    value={user.name}
-                                                                    key={user.id}
+                                                                    value={team.name}
+                                                                    key={team.id}
                                                                     onSelect={() => {
                                                                         const current = field.value || []
-                                                                        const updated = current.includes(user.id)
-                                                                            ? current.filter((id) => id !== user.id)
-                                                                            : [...current, user.id]
+                                                                        const updated = current.includes(team.id)
+                                                                            ? current.filter((id: string) => id !== team.id)
+                                                                            : [...current, team.id]
                                                                         field.onChange(updated)
                                                                     }}
                                                                 >
                                                                     <Check
                                                                         className={cn(
                                                                             "mr-2 h-4 w-4",
-                                                                            (field.value || []).includes(user.id)
+                                                                            (field.value || []).includes(team.id)
                                                                                 ? "opacity-100"
                                                                                 : "opacity-0"
                                                                         )}
                                                                     />
-                                                                    {user.name}
+                                                                    {team.name}
                                                                 </CommandItem>
                                                             ))}
                                                         </CommandGroup>
@@ -316,15 +331,15 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                             </PopoverContent>
                                         </Popover>
                                         <div className="flex flex-wrap gap-2 mt-2">
-                                            {(field.value || []).map((userId) => {
-                                                const user = users.find((u) => u.id === userId)
-                                                return user ? (
-                                                    <Badge key={userId} variant="secondary" className="flex items-center gap-1">
-                                                        {user.name}
+                                            {(field.value || []).map((teamId: string) => {
+                                                const team = teams.find((t) => t.id === teamId)
+                                                return team ? (
+                                                    <Badge key={teamId} variant="secondary" className="flex items-center gap-1">
+                                                        {team.name}
                                                         <X
                                                             className="h-3 w-3 cursor-pointer"
                                                             onClick={() => {
-                                                                field.onChange((field.value || []).filter((id) => id !== userId))
+                                                                field.onChange((field.value || []).filter((id: string) => id !== teamId))
                                                             }}
                                                         />
                                                     </Badge>
