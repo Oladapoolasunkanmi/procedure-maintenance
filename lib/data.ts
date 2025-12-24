@@ -55,14 +55,26 @@ export interface Asset {
     manufacturer?: string;
     teamsInCharge?: string[];
     qrCode?: string;
+    barcode?: string;
     files?: string[];
     assetType?: string;
     vendors?: string[];
-    status: "Online" | "Offline";
+    status: "Online" | "Offline" | "Do Not Track";
     image?: string;
+    images?: string[];
     subAssetsCount?: number;
     year?: number;
     parentAssetId?: string;
+    createdAt?: string;
+    createdBy?: {
+        id: string;
+        name: string;
+    };
+    updatedAt?: string;
+    updatedBy?: {
+        id: string;
+        name: string;
+    };
 }
 
 export interface WorkOrder {

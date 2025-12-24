@@ -69,6 +69,8 @@ const formSchema = z.object({
     parts: z.string().optional(),
     parentAssetId: z.string().optional(),
     notes: z.string().optional(),
+    images: z.array(z.string()).optional(),
+    files: z.array(z.string()).optional(),
 })
 
 interface AssetFormProps {
@@ -93,6 +95,8 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
     const [assetTree, setAssetTree] = useState<AssetTreeNode[]>([])
     const [teams, setTeams] = useState<any[]>([])
     const [realLocations, setRealLocations] = useState<any[]>([])
+    const [isUploadingImage, setIsUploadingImage] = useState(false)
+    const [isUploadingFile, setIsUploadingFile] = useState(false)
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema) as any,
@@ -103,8 +107,64 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
             teamsInCharge: searchParams.get("teamId") ? [searchParams.get("teamId")!] : [],
             parentAssetId: searchParams.get("parentId") || undefined,
             locationId: searchParams.get("locationId") || "",
+            images: [],
+            files: [],
         },
     })
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'file') => {
+        const files = e.target.files
+        if (!files || files.length === 0) return
+
+        const setIsUploading = type === 'image' ? setIsUploadingImage : setIsUploadingFile
+        const fieldName = type === 'image' ? 'images' : 'files'
+
+        setIsUploading(true)
+        try {
+            const newUrls: string[] = []
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i]
+                const formData = new FormData()
+                formData.append('file', file)
+                // Generate a unique path for the file. 
+                // Using a simpler path structure that keeps the original extension.
+                const timestamp = Date.now()
+                const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+                formData.append('path', `assets/${timestamp}_${cleanName}`)
+
+                const uploadRes = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+
+                if (uploadRes.ok) {
+                    const data = await uploadRes.json()
+                    // Assuming the API returns the URL in a property like 'url' or 'path'
+                    // If it returns the full object (blob info), adjust accordingly.
+                    // Usually it returns { url: "..." } or similar.
+                    if (data.url) {
+                        newUrls.push(data.url)
+                    } else if (data.path) {
+                        // If it returns a path, maybe we need to construct a URL or use /api/image?path=...
+                        // Let's assume for now we use the path via /api/image proxy
+                        newUrls.push(`/api/image?path=${encodeURIComponent(data.path)}`)
+                    }
+                } else {
+                    console.error("Upload failed", await uploadRes.text())
+                    toast({ title: "Upload failed", description: "Could not upload file.", variant: "destructive" })
+                }
+            }
+
+            const current = form.getValues(fieldName as any) || []
+            form.setValue(fieldName as any, [...current, ...newUrls])
+        } catch (error) {
+            console.error("Upload failed", error)
+            toast({ title: "Upload failed", variant: "destructive" })
+        } finally {
+            setIsUploading(false)
+        }
+    }
 
     useEffect(() => {
         const focusParam = searchParams.get("focus")
@@ -276,10 +336,39 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                             {/* 2. Pictures */}
                             <div className="space-y-2">
                                 <FormLabel>Pictures</FormLabel>
-                                <div className="rounded-lg border border-dashed px-8 py-10 text-center hover:bg-accent/40 hover:border-primary transition-colors cursor-pointer">
-                                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                        <Upload className="h-8 w-8" />
-                                        <span className="text-sm font-medium">Add or drag pictures</span>
+                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                    {form.watch("images")?.map((url, index) => (
+                                        <div key={index} className="relative aspect-video rounded-lg border bg-muted overflow-hidden group">
+                                            <img src={url} alt={`Asset ${index + 1}`} className="w-full h-full object-cover" />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const current = form.getValues("images") || []
+                                                    form.setValue("images", current.filter((_, i) => i !== index))
+                                                }}
+                                                className="absolute top-2 right-2 p-1 bg-black/50 hover:bg-black/70 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="rounded-lg border border-dashed text-center hover:bg-accent/40 hover:border-primary transition-colors cursor-pointer relative">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                        onChange={(e) => handleFileUpload(e, 'image')}
+                                        disabled={isUploadingImage}
+                                    />
+                                    <div className="flex flex-col items-center gap-2 text-muted-foreground px-8 py-10">
+                                        {isUploadingImage ? (
+                                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                        ) : (
+                                            <Upload className="h-8 w-8" />
+                                        )}
+                                        <span className="text-sm font-medium">{isUploadingImage ? "Uploading..." : "Add or drag pictures"}</span>
                                     </div>
                                 </div>
                             </div>
@@ -287,10 +376,38 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                             {/* 3. Files */}
                             <div className="space-y-2">
                                 <FormLabel>Files</FormLabel>
-                                <div className="rounded-lg border border-dashed px-8 py-6 text-center hover:bg-accent/40 hover:border-primary transition-colors cursor-pointer">
-                                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                        <FileText className="h-8 w-8" />
-                                        <span className="text-sm font-medium">Add or drag files</span>
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                    {form.watch("files")?.map((file, index) => (
+                                        <Badge key={index} variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+                                            <span className="max-w-[150px] truncate">{file.split('/').pop()}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const current = form.getValues("files") || []
+                                                    form.setValue("files", current.filter((_, i) => i !== index))
+                                                }}
+                                                className="ml-1 hover:text-destructive"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </Badge>
+                                    ))}
+                                </div>
+                                <div className="rounded-lg border border-dashed text-center hover:bg-accent/40 hover:border-primary transition-colors cursor-pointer relative">
+                                    <input
+                                        type="file"
+                                        multiple
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                        onChange={(e) => handleFileUpload(e, 'file')}
+                                        disabled={isUploadingFile}
+                                    />
+                                    <div className="flex flex-col items-center gap-2 text-muted-foreground px-8 py-6">
+                                        {isUploadingFile ? (
+                                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                        ) : (
+                                            <FileText className="h-8 w-8" />
+                                        )}
+                                        <span className="text-sm font-medium">{isUploadingFile ? "Uploading..." : "Add or drag files"}</span>
                                     </div>
                                 </div>
                             </div>

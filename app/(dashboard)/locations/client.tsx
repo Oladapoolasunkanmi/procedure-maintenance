@@ -344,6 +344,7 @@ export function LocationsClient() {
                         teams={teams}
                         onClose={() => router.replace(pathname)}
                         onSelect={handleSelect}
+                        refetch={() => fetchLocations()}
                     />
                 </div>
             ) : (
@@ -477,7 +478,7 @@ function SubLocationNode({ location, allLocations, onSelect }: { location: Locat
     )
 }
 
-function LocationDetail({ location, allLocations, teams, onClose, onSelect }: { location: Location; allLocations: Location[]; teams: any[]; onClose: () => void; onSelect: (id: string) => void }) {
+function LocationDetail({ location, allLocations, teams, onClose, onSelect, refetch }: { location: Location; allLocations: Location[]; teams: any[]; onClose: () => void; onSelect: (id: string) => void; refetch: () => void }) {
     const router = useRouter()
     const [activeTab, setActiveTab] = React.useState("details")
     const [indicatorStyle, setIndicatorStyle] = React.useState({ left: 0, width: 0 })
@@ -563,7 +564,9 @@ function LocationDetail({ location, allLocations, teams, onClose, onSelect }: { 
             const res = await fetch(`/api/locations?id=${location.id}`, { method: 'DELETE' })
             if (!res.ok) throw new Error("Failed to delete")
             // refresh page
-            window.location.href = "/locations"
+            onSelect("")
+            refetch()
+            router.push('/locations')
         } catch (error) {
             console.error(error)
             // toast error

@@ -10,7 +10,7 @@ import {
     Plus,
     Search,
     MapPin,
-    QrCode,
+    QrCode as QrCodeIcon,
     FileText,
     History,
     Settings,
@@ -24,8 +24,12 @@ import {
     AlertTriangle,
     Link as LinkIcon,
     Edit,
-    Loader2
+    Loader2,
+    Users,
+    Trash2,
+    Printer
 } from "lucide-react"
+import QRCode from 'qrcode'
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -68,18 +72,22 @@ import { Label } from "@/components/ui/label"
 import { assets, locations, Asset } from "@/lib/data"
 import { cn } from "@/lib/utils"
 
+import { Checkbox } from "@/components/ui/checkbox"
+import { DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
+
 const filterOptions = [
-    { label: "Description", icon: FileText },
-    { label: "Work Order Recurrence", icon: Clock },
-    { label: "Asset", icon: Network },
-    { label: "Location", icon: MapPin },
-    { label: "Manufacturer", icon: Briefcase },
-    { label: "Model", icon: FileText },
-    { label: "Part", icon: Settings },
-    { label: "Procedure", icon: FileText },
-    { label: "Serial Number", icon: QrCode },
-    { label: "Teams in Charge", icon: Network },
-    { label: "Vendor", icon: Briefcase },
+    { label: "Asset", icon: Network, type: "search", key: "asset" }, // Usually parent asset? or just name? User said "Assets" multi-select. I'll treat it as Parent Asset or similar.
+    { label: "Location", icon: MapPin, type: "multi-select", key: "location" },
+    { label: "Teams", icon: Users, type: "multi-select", key: "teams" }, // "Teams in Charge" -> "Teams"
+    { label: "Criticality", icon: AlertTriangle, type: "multi-select", key: "criticality" },
+    { label: "Status", icon: Settings, type: "multi-select", key: "status" },
+
+    // Search filters
+    { label: "Name", icon: Box, type: "search", key: "name" },
+    { label: "Model", icon: FileText, type: "search", key: "model" },
+    { label: "Serial Number", icon: QrCodeIcon, type: "search", key: "serialNumber" },
+    { label: "Manufacturer", icon: Briefcase, type: "search", key: "manufacturer" },
+    { label: "Vendor", icon: Briefcase, type: "search", key: "vendor" },
 ]
 
 export function AssetsClient() {
@@ -87,10 +95,34 @@ export function AssetsClient() {
     const router = useRouter()
     const pathname = usePathname()
     const selectedId = searchParams.get("id")
-    const [activeFilters, setActiveFilters] = React.useState<string[]>([])
+
+    const [filterConfig, setFilterConfig] = React.useState<any>({
+        name: "",
+        model: "",
+        serialNumber: "",
+        manufacturer: "",
+        vendor: "",
+        location: [],
+        teams: [],
+        criticality: [],
+        status: [],
+        asset: "",
+        missingInfo: false
+    })
+
+    const [activeFilterKeys, setActiveFilterKeys] = React.useState<string[]>([]) // To toggle visibility of filter buttons
 
     const [assetsList, setAssetsList] = React.useState<Asset[]>([])
+    const [locationsList, setLocationsList] = React.useState<any[]>([])
+    const [teamsList, setTeamsList] = React.useState<any[]>([])
+
     const [isLoading, setIsLoading] = React.useState(true)
+    const [sortConfig, setSortConfig] = React.useState<{ key: 'name' | 'createdAt', direction: 'asc' | 'desc' }>({
+        key: 'createdAt',
+        direction: 'desc'
+    })
+
+    // ... Fetch logic ...
     const [nextBlockId, setNextBlockId] = React.useState<string | null>(null)
 
     const fetchAssets = React.useCallback(async (blockId?: string) => {
@@ -120,9 +152,70 @@ export function AssetsClient() {
         }
     }, [])
 
+
     React.useEffect(() => {
-        fetchAssets()
+        const loadData = async () => {
+            await fetchAssets()
+
+            // Fetch Locations
+            try {
+                const res = await fetch('/api/locations?limit=1000')
+                const data = await res.json()
+                if (data.items) setLocationsList(data.items.map((i: any) => ({ ...i, id: i.id || i._id })))
+            } catch (e) { console.error(e) }
+
+            // Fetch Teams
+            try {
+                const res = await fetch('/api/teams')
+                const data = await res.json()
+                if (data.items) setTeamsList(data.items.map((i: any) => ({ ...i, id: i.id || i._id })))
+            } catch (e) { console.error(e) }
+        }
+        loadData()
     }, [fetchAssets])
+
+    const filteredAssets = React.useMemo(() => {
+        let filtered = assetsList.filter(asset => {
+            // Search filters
+            if (filterConfig.name && !asset.name.toLowerCase().includes(filterConfig.name.toLowerCase())) return false
+            if (filterConfig.model && !asset.model?.toLowerCase().includes(filterConfig.model.toLowerCase())) return false
+            if (filterConfig.manufacturer && !asset.manufacturer?.toLowerCase().includes(filterConfig.manufacturer.toLowerCase())) return false
+            if (filterConfig.serialNumber && !asset.serialNumber?.toLowerCase().includes(filterConfig.serialNumber.toLowerCase())) return false
+            if (filterConfig.vendor && !(asset.vendors || []).some((v: string) => v.toLowerCase().includes(filterConfig.vendor.toLowerCase()))) return false
+
+            // Multi-select filters
+            if (filterConfig.location.length > 0 && !filterConfig.location.includes(asset.locationId)) return false
+            if (filterConfig.criticality.length > 0 && !filterConfig.criticality.includes(asset.criticality)) return false
+            if (filterConfig.status.length > 0 && !filterConfig.status.includes(asset.status)) return false
+
+            // Teams: check if asset.teamsInCharge has overlap with filterConfig.teams
+            if (filterConfig.teams.length > 0) {
+                const hasTeam = (asset.teamsInCharge || []).some((tId: string) => filterConfig.teams.includes(tId))
+                if (!hasTeam) return false
+            }
+
+            // Missing Info
+            if (filterConfig.missingInfo && (asset.manufacturer && asset.model)) return false
+
+            return true
+        })
+
+        // Sorting
+        return filtered.sort((a, b) => {
+            if (sortConfig.key === 'name') {
+                return sortConfig.direction === 'asc'
+                    ? a.name.localeCompare(b.name)
+                    : b.name.localeCompare(a.name)
+            } else if (sortConfig.key === 'createdAt') {
+                const dateA = new Date(a.createdAt || 0).getTime()
+                const dateB = new Date(b.createdAt || 0).getTime()
+                return sortConfig.direction === 'asc'
+                    ? dateA - dateB
+                    : dateB - dateA
+            }
+            return 0
+        })
+    }, [assetsList, filterConfig, sortConfig])
 
     const selectedAsset = React.useMemo(() => {
         return assetsList.find((a) => a.id === selectedId)
@@ -169,16 +262,15 @@ export function AssetsClient() {
                             size="sm"
                             className="text-primary hover:text-primary/80 hover:bg-primary/10 h-auto py-0 px-2 font-medium"
                             onClick={() => {
-                                // Filter logic: we could add a new filter type or just filter the list locally.
-                                // Since the list is client-side filtered for now (mostly), let's just add a special filter state or 
-                                // simply filter the visible list. But `assetsList` is the source of truth.
-                                // Let's add a "Missing Info" filter to `activeFilters` and handle it in the render loop?
-                                // Or simpler: just set a state `showMissingInfoOnly`.
-                                // But the user might want to clear it.
-                                // Let's add "Missing Info" to activeFilters and handle it.
-                                if (!activeFilters.includes("Missing Info")) {
-                                    setActiveFilters([...activeFilters, "Missing Info"])
-                                }
+                                // Just check if filters are already set to find missing info
+                                // Simplest way is a special filter or just manually setting them?
+                                // Let's set a special "missingInfo" flag in filterConfig if needed, 
+                                // or just pre-fill a "status" or something? 
+                                // Actually, I should probably add a toggle for "Missing Info" or just filter manually here.
+                                // For now, I'll just clear filters and maybe log it, or ideally 
+                                // I should add a "missingInfo" boolean to filterConfig.
+                                // Let's add it to state first.
+                                setFilterConfig((prev: any) => ({ ...prev, missingInfo: true }))
                             }}
                         >
                             Update Assets
@@ -188,45 +280,51 @@ export function AssetsClient() {
 
                 {/* Filters */}
                 <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-                    <Button variant="outline" size="sm" className="h-9 border-dashed text-muted-foreground">
-                        <Network className="mr-2 h-3.5 w-3.5" />
-                        Asset Type
-                    </Button>
+                    <FilterMultiSelect
+                        label="Location"
+                        icon={MapPin}
+                        options={locationsList.map(l => ({ label: l.name, value: l.id }))}
+                        value={filterConfig.location}
+                        onChange={(val) => setFilterConfig({ ...filterConfig, location: val })}
+                    />
+                    <FilterMultiSelect
+                        label="Teams"
+                        icon={Users}
+                        options={teamsList.map(t => ({ label: t.name, value: t.id }))}
+                        value={filterConfig.teams}
+                        onChange={(val) => setFilterConfig({ ...filterConfig, teams: val })}
+                    />
+                    <FilterMultiSelect
+                        label="Criticality"
+                        icon={AlertTriangle}
+                        options={["Low", "Medium", "High", "Critical"].map(c => ({ label: c, value: c }))}
+                        value={filterConfig.criticality}
+                        onChange={(val) => setFilterConfig({ ...filterConfig, criticality: val })}
+                    />
+                    <FilterMultiSelect
+                        label="Status"
+                        icon={Settings}
+                        options={["Online", "Offline", "Do Not Track"].map(s => ({ label: s, value: s }))}
+                        value={filterConfig.status}
+                        onChange={(val) => setFilterConfig({ ...filterConfig, status: val })}
+                    />
 
-                    <Button variant="outline" size="sm" className="h-9 border-dashed text-muted-foreground">
-                        <AlertTriangle className="mr-2 h-3.5 w-3.5" />
-                        Criticality
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-9 border-dashed text-muted-foreground">
-                        <Settings className="mr-2 h-3.5 w-3.5" />
-                        Status
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-9 border-dashed text-muted-foreground">
-                        <Clock className="mr-2 h-3.5 w-3.5" />
-                        Downtime Reason
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-9 border-dashed text-muted-foreground">
-                        <History className="mr-2 h-3.5 w-3.5" />
-                        Downtime Duration
-                    </Button>
-
-                    {activeFilters.map((filter) => {
-                        const option = filterOptions.find(o => o.label === filter)
-                        const Icon = option?.icon || Box
+                    {/* Dynamic Search Filters */}
+                    {activeFilterKeys.map(key => {
+                        const option = filterOptions.find(o => o.key === key)
+                        if (!option || option.type !== 'search') return null
                         return (
-                            <Button key={filter} variant="outline" size="sm" className="h-9 border-dashed text-muted-foreground bg-accent/50">
-                                <Icon className="mr-2 h-3.5 w-3.5" />
-                                {filter}
-                                <span
-                                    className="ml-2 hover:text-foreground cursor-pointer"
-                                    onClick={(e) => {
-                                        e.stopPropagation()
-                                        setActiveFilters(prev => prev.filter(f => f !== filter))
-                                    }}
-                                >
-                                    &times;
-                                </span>
-                            </Button>
+                            <FilterSearch
+                                key={key}
+                                label={option.label}
+                                icon={option.icon}
+                                value={filterConfig[key] || ""}
+                                onChange={(val) => setFilterConfig({ ...filterConfig, [key]: val })}
+                                onRemove={() => {
+                                    setFilterConfig({ ...filterConfig, [key]: "" })
+                                    setActiveFilterKeys(prev => prev.filter(k => k !== key))
+                                }}
+                            />
                         )
                     })}
 
@@ -243,13 +341,13 @@ export function AssetsClient() {
                                 <CommandList>
                                     <CommandEmpty>No filter found.</CommandEmpty>
                                     <CommandGroup>
-                                        {filterOptions.map((option) => (
+                                        {filterOptions.filter(o => o.type === 'search' && !activeFilterKeys.includes(o.key)).map((option) => (
                                             <CommandItem
                                                 key={option.label}
                                                 value={option.label}
                                                 onSelect={() => {
-                                                    if (!activeFilters.includes(option.label)) {
-                                                        setActiveFilters([...activeFilters, option.label])
+                                                    if (!activeFilterKeys.includes(option.key)) {
+                                                        setActiveFilterKeys([...activeFilterKeys, option.key])
                                                     }
                                                 }}
                                             >
@@ -262,15 +360,50 @@ export function AssetsClient() {
                             </Command>
                         </PopoverContent>
                     </Popover>
+
+                    {(activeFilterKeys.length > 0 || filterConfig.location.length > 0 || filterConfig.teams.length > 0 || filterConfig.criticality.length > 0 || filterConfig.status.length > 0) && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                                setFilterConfig({
+                                    name: "", model: "", serialNumber: "", manufacturer: "", vendor: "",
+                                    location: [], teams: [], criticality: [], status: [], asset: ""
+                                })
+                                setActiveFilterKeys([])
+                            }}
+                            className="h-9 px-2 text-muted-foreground hover:text-foreground"
+                        >
+                            <Trash2 className="mr-2 h-3.5 w-3.5" />
+                            Clear Filters
+                        </Button>
+                    )}
                 </div>
 
                 {/* Sort By */}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>Sort By:</span>
-                    <Button variant="ghost" size="sm" className="h-auto p-0 text-muted-foreground font-bold hover:bg-transparent hover:text-muted-foreground/80">
-                        Name: Ascending Order
-                        <ChevronDown className="ml-1 h-3 w-3" />
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-auto p-0 text-muted-foreground font-bold hover:bg-transparent hover:text-muted-foreground/80 gap-1">
+                                {sortConfig.key === 'createdAt'
+                                    ? (sortConfig.direction === 'desc' ? "Latest" : "Oldest")
+                                    : (sortConfig.direction === 'asc' ? "Name: Ascending" : "Name: Descending")}
+                                <ChevronDown className="h-3 w-3" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setSortConfig({ key: 'name', direction: 'asc' })}>
+                                Name: Ascending Order
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setSortConfig({ key: 'name', direction: 'desc' })}>
+                                Name: Descending Order
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setSortConfig({ key: 'createdAt', direction: 'desc' })}>
+                                Latest (Default)
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
 
                 <ScrollArea className="flex-1 border rounded-md bg-card">
@@ -282,12 +415,7 @@ export function AssetsClient() {
                             </div>
                         ) : (
                             <>
-                                {assetsList.filter(a => !a.parentAssetId).filter(a => {
-                                    if (activeFilters.includes("Missing Info")) {
-                                        return !a.manufacturer || !a.model
-                                    }
-                                    return true
-                                }).map((asset) => {
+                                {filteredAssets.filter(a => !a.parentAssetId).map((asset) => { // User filteredAssets instead of assetsList
                                     // Calculate sub-assets count from the loaded list recursively
                                     const calculatedSubAssetsCount = countAllDescendants(asset.id, assetsList)
                                     const displayCount = asset.subAssetsCount || calculatedSubAssetsCount
@@ -336,26 +464,29 @@ export function AssetsClient() {
             </div>
 
             {/* Detail View */}
-            {selectedAsset ? (
-                <div className={cn("flex-1 flex flex-col overflow-hidden rounded-lg border bg-background shadow-sm transition-all duration-300", !selectedId && "hidden md:flex")}>
-                    <AssetDetail
-                        asset={selectedAsset}
-                        allAssets={assetsList}
-                        onClose={() => router.replace(pathname)}
-                        onSelect={handleSelect}
-                        onUpdate={handleAssetUpdate}
-                    />
-                </div>
-            ) : (
-                <div className="hidden flex-1 items-center justify-center rounded-lg border border-dashed md:flex">
-                    <div className="flex flex-col items-center gap-2 text-center text-muted-foreground">
-                        <Box className="h-12 w-12 opacity-20" />
-                        <h3 className="text-lg font-semibold">No Asset Selected</h3>
-                        <p className="text-sm">Select an asset from the list to view details.</p>
+            {
+                selectedAsset ? (
+                    <div className={cn("flex-1 flex flex-col overflow-hidden rounded-lg border bg-background shadow-sm transition-all duration-300", !selectedId && "hidden md:flex")}>
+                        <AssetDetail
+                            asset={selectedAsset}
+                            allAssets={assetsList}
+                            onClose={() => router.replace(pathname)}
+                            onSelect={handleSelect}
+                            onUpdate={handleAssetUpdate}
+                            refetch={() => fetchAssets()}
+                        />
                     </div>
-                </div>
-            )}
-        </div>
+                ) : (
+                    <div className="hidden flex-1 items-center justify-center rounded-lg border border-dashed md:flex">
+                        <div className="flex flex-col items-center gap-2 text-center text-muted-foreground">
+                            <Box className="h-12 w-12 opacity-20" />
+                            <h3 className="text-lg font-semibold">No Asset Selected</h3>
+                            <p className="text-sm">Select an asset from the list to view details.</p>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     )
 }
 
@@ -455,7 +586,7 @@ function SubAssetNode({ asset, allAssets, onSelect }: { asset: Asset; allAssets:
     )
 }
 
-function CreateSubAssetDialog({ parentAsset, open, onOpenChange }: { parentAsset: Asset; open: boolean; onOpenChange: (open: boolean) => void }) {
+function CreateSubAssetDialog({ parentAsset, open, onOpenChange, onSuccess }: { parentAsset: Asset; open: boolean; onOpenChange: (open: boolean) => void; onSuccess?: () => void }) {
     const router = useRouter()
     const [name, setName] = React.useState("")
     const [isLoading, setIsLoading] = React.useState(false)
@@ -477,6 +608,7 @@ function CreateSubAssetDialog({ parentAsset, open, onOpenChange }: { parentAsset
             if (res.ok) {
                 onOpenChange(false)
                 setName("")
+                if (onSuccess) onSuccess()
                 router.refresh()
             }
         } catch (error) {
@@ -531,7 +663,7 @@ function CreateSubAssetDialog({ parentAsset, open, onOpenChange }: { parentAsset
     )
 }
 
-function AssetDetail({ asset, allAssets, onClose, onSelect, onUpdate }: { asset: Asset; allAssets: Asset[]; onClose: () => void; onSelect: (id: string) => void; onUpdate: (asset: Asset) => void }) {
+function AssetDetail({ asset, allAssets, onClose, onSelect, onUpdate, refetch }: { asset: Asset; allAssets: Asset[]; onClose: () => void; onSelect: (id: string) => void; onUpdate: (asset: Asset) => void; refetch: () => void }) {
     const router = useRouter()
     const location = locations.find((l) => l.id === asset.locationId)
     const [activeTab, setActiveTab] = React.useState("details")
@@ -539,8 +671,79 @@ function AssetDetail({ asset, allAssets, onClose, onSelect, onUpdate }: { asset:
     const tabsListRef = React.useRef<HTMLDivElement>(null)
     const [isSubAssetDialogOpen, setIsSubAssetDialogOpen] = React.useState(false)
     const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false)
+    const [isDeleting, setIsDeleting] = React.useState(false)
+    const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
+    const [qrCodeUrl, setQrCodeUrl] = React.useState<string>("")
 
     const subAssetsCount = countAllDescendants(asset.id, allAssets)
+
+    React.useEffect(() => {
+        if (typeof window !== 'undefined' && asset.id) {
+            const url = `${window.location.origin}/assets?id=${asset.id}`
+            QRCode.toDataURL(url)
+                .then(url => {
+                    setQrCodeUrl(url)
+                })
+                .catch(err => {
+                    console.error("Error generating QR code", err)
+                })
+        }
+    }, [asset.id])
+
+    const handlePrintQr = () => {
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Print QR Code - ${asset.name}</title>
+                    <style>
+                        body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
+                        h2 { margin-bottom: 20px; font-size: 2em; }
+                        img { max-width: 600px; width: 100%; height: auto; }
+                        p { margin-top: 10px; font-weight: bold; font-size: 1.5em; }
+                    </style>
+                </head>
+                <body>
+                    <h2>${asset.name}</h2>
+                    <img src="${qrCodeUrl}" id="qr-img" />
+                    <p>${asset.barcode || asset.id}</p>
+                    <script>
+                        // Wait for image to load before printing
+                        document.getElementById('qr-img').onload = function() {
+                             setTimeout(function() {
+                                window.print();
+                             }, 200);
+                        }
+                    </script>
+                </body>
+                </html>
+             `);
+            printWindow.document.close();
+        }
+    }
+
+    const handleDelete = async () => {
+        setIsDeleting(true)
+        try {
+            const res = await fetch(`/api/assets?id=${asset.id}`, {
+                method: "DELETE"
+            })
+            if (res.ok) {
+                // Refresh list and deselect
+                onSelect("") // clear selection
+                refetch() // Refetch the list
+                router.push('/assets') // Go back to list URL
+            } else {
+                console.error("Failed to delete")
+            }
+        } catch (error) {
+            console.error(error)
+        } finally {
+            setIsDeleting(false)
+            setShowDeleteDialog(false)
+        }
+    }
 
     React.useEffect(() => {
         const updateIndicator = () => {
@@ -625,9 +828,37 @@ function AssetDetail({ asset, allAssets, onClose, onSelect, onUpdate }: { asset:
                         <Edit className="mr-2 h-4 w-4" />
                         Edit
                     </Button>
-                    <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive focus:text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Asset
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Delete Asset</DialogTitle>
+                                <DialogDescription>
+                                    Are you sure you want to delete <strong>{asset.name}</strong>? This action cannot be undone.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
+                                <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                    Delete
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
 
@@ -759,9 +990,67 @@ function AssetDetail({ asset, allAssets, onClose, onSelect, onUpdate }: { asset:
                                 <h3 className="font-semibold">Criticality</h3>
                                 <p className="text-sm text-muted-foreground">{asset.criticality}</p>
                             </div>
+
+                            <div className="space-y-1">
+                                <h3 className="font-semibold">Barcode</h3>
+                                <div className="flex items-start gap-4">
+                                    {qrCodeUrl ? (
+                                        <div className="flex flex-col gap-2">
+                                            <img src={qrCodeUrl} alt="QR Code" className="w-24 h-24 border rounded-md" />
+                                            <Button variant="outline" size="sm" onClick={handlePrintQr} className="w-full">
+                                                <Printer className="w-3 h-3 mr-2" />
+                                                Print
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="w-24 h-24 bg-muted animate-pulse rounded-md" />
+                                    )}
+                                    <div className="flex flex-col gap-1 pt-1">
+                                        <div className="flex items-center gap-2">
+                                            <QrCodeIcon className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-sm font-medium">{asset.barcode || (asset.id ? `AST-${asset.id.substring(0, 8)}` : "-")}</span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground max-w-[150px]">
+                                            Scan to view asset details.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <Separator />
+
+                        {/* Images & Files */}
+                        {(asset.images?.length || 0) > 0 && (
+                            <div className="space-y-4">
+                                <h3 className="font-semibold">Pictures</h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {asset.images?.map((url, i) => (
+                                        <div key={i} className="aspect-video rounded-lg border bg-muted overflow-hidden">
+                                            <img src={url} alt={`Asset ${i}`} className="w-full h-full object-cover" />
+                                        </div>
+                                    ))}
+                                </div>
+                                <Separator />
+                            </div>
+                        )}
+
+                        {(asset.files?.length || 0) > 0 && (
+                            <div className="space-y-4">
+                                <h3 className="font-semibold">Files</h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {asset.files?.map((file, i) => (
+                                        <Button key={i} variant="outline" className="h-auto py-2 px-3 gap-2" asChild>
+                                            <a href={file} target="_blank" rel="noopener noreferrer">
+                                                <FileText className="h-4 w-4 text-primary" />
+                                                <span className="max-w-[150px] truncate">{file.split('/').pop() || "File"}</span>
+                                            </a>
+                                        </Button>
+                                    ))}
+                                </div>
+                                <Separator />
+                            </div>
+                        )}
 
                         {/* Sub-Assets */}
                         <div className="space-y-4">
@@ -782,44 +1071,58 @@ function AssetDetail({ asset, allAssets, onClose, onSelect, onUpdate }: { asset:
 
                             <SubAssetTree parentId={asset.id} assets={allAssets} onSelect={onSelect} />
 
-                            {subAssetsCount > 0 && (
+                            {/* {subAssetsCount > 0 && (
                                 <Button variant="link" className="h-auto p-0 text-primary text-sm">See all &gt;</Button>
-                            )}
+                            )} */}
                         </div>
 
                         <CreateSubAssetDialog
                             parentAsset={asset}
                             open={isSubAssetDialogOpen}
                             onOpenChange={setIsSubAssetDialogOpen}
+                            onSuccess={refetch}
                         />
 
                         <Separator />
 
-                        {/* Automations */}
-                        <div className="space-y-4">
-                            <h3 className="font-semibold">Automations (0)</h3>
-                            <div className="rounded-md bg-primary/5 border border-primary/20 p-3 flex items-center gap-2 text-sm text-primary">
-                                <Info className="h-4 w-4" />
-                                Add a Meter to this Asset to enable Automations.
-                            </div>
-                            <Button variant="outline" className="w-full justify-start text-primary border-dashed border-primary/30 hover:bg-primary/5">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Create Meter
-                            </Button>
-                        </div>
-
-                        {/* Created By */}
-                        <div className="pt-4 text-xs text-muted-foreground flex items-center gap-1">
-                            Created By <span className="font-medium text-foreground">Rafael Boeira</span> on 12/20/2025, 3:47 AM
-                        </div>
-
+                        <Separator />
                     </TabsContent>
 
                     <TabsContent value="history" className="m-0 p-6">
-                        <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground border border-dashed rounded-lg">
-                            <History className="h-12 w-12 opacity-20 mb-4" />
-                            <h3 className="text-lg font-semibold">No History</h3>
-                            <p className="text-sm">No history events recorded for this asset yet.</p>
+                        <div className="space-y-6">
+                            <div className="flex items-start gap-4">
+                                <div className="mt-1 bg-green-100 p-2 rounded-full">
+                                    <Plus className="h-4 w-4 text-green-600" />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-sm">Asset Created</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        by {asset.createdBy?.name || "Unknown User"} on {asset.createdAt ? new Date(asset.createdAt).toLocaleString() : "Unknown Date"}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {asset.updatedAt && (
+                                <div className="flex items-start gap-4">
+                                    <div className="mt-1 bg-blue-100 p-2 rounded-full">
+                                        <Edit className="h-4 w-4 text-blue-600" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-sm">Asset Updated</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            by {asset.updatedBy?.name || "Unknown User"} on {new Date(asset.updatedAt).toLocaleString()}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {(!asset.createdAt && !asset.updatedAt) && (
+                                <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground border border-dashed rounded-lg">
+                                    <History className="h-12 w-12 opacity-20 mb-4" />
+                                    <h3 className="text-lg font-semibold">No History</h3>
+                                    <p className="text-sm">No history events recorded for this asset yet.</p>
+                                </div>
+                            )}
                         </div>
                     </TabsContent>
                 </div>
@@ -843,4 +1146,145 @@ function countAllDescendants(assetId: string, allAssets: Asset[]): number {
         count += countAllDescendants(child.id, allAssets);
     }
     return count;
+}
+
+function FilterMultiSelect({
+    label,
+    icon: Icon,
+    options,
+    value,
+    onChange
+}: {
+    label: string;
+    icon: any;
+    options: { label: string; value: string }[];
+    value: string[];
+    onChange: (val: string[]) => void;
+}) {
+    const isActive = value.length > 0
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("h-9 border-dashed text-muted-foreground", isActive && "bg-accent text-accent-foreground border-solid")}>
+                    <Icon className="mr-2 h-3.5 w-3.5" />
+                    {label}
+                    {isActive && (
+                        <div className="ml-1 flex items-center">
+                            <Separator orientation="vertical" className="mx-2 h-4" />
+                            <Badge variant="secondary" className="rounded-sm px-1 font-normal lg:hidden">
+                                {value.length}
+                            </Badge>
+                            <div className="hidden space-x-1 lg:flex">
+                                {value.length > 2 ? (
+                                    <Badge variant="secondary" className="rounded-sm px-1 font-normal">
+                                        {value.length} selected
+                                    </Badge>
+                                ) : (
+                                    options
+                                        .filter((option) => value.includes(option.value))
+                                        .map((option) => (
+                                            <Badge
+                                                variant="secondary"
+                                                key={option.value}
+                                                className="rounded-sm px-1 font-normal"
+                                            >
+                                                {option.label}
+                                            </Badge>
+                                        ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[200px]">
+                <DropdownMenuLabel>Filter by {label}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <ScrollArea className="h-[200px]">
+                    {options.map((option) => {
+                        const isSelected = value.includes(option.value)
+                        return (
+                            <DropdownMenuCheckboxItem
+                                key={option.value}
+                                checked={isSelected}
+                                onCheckedChange={() => {
+                                    if (isSelected) {
+                                        onChange(value.filter((val) => val !== option.value))
+                                    } else {
+                                        onChange([...value, option.value])
+                                    }
+                                }}
+                            >
+                                <span className={cn(isSelected ? "font-medium" : "")}>{option.label}</span>
+                            </DropdownMenuCheckboxItem>
+                        )
+                    })}
+                </ScrollArea>
+                {isActive && (
+                    <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            onSelect={() => onChange([])}
+                            className="justify-center text-center"
+                        >
+                            Clear filters
+                        </DropdownMenuItem>
+                    </>
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )
+}
+
+function FilterSearch({
+    label,
+    icon: Icon,
+    value,
+    onChange,
+    onRemove
+}: {
+    label: string;
+    icon: any;
+    value: string;
+    onChange: (val: string) => void;
+    onRemove: () => void;
+}) {
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className={cn("h-9 border-dashed text-muted-foreground", value && "bg-accent text-accent-foreground border-solid")}>
+                    <Icon className="mr-2 h-3.5 w-3.5" />
+                    {label}
+                    {value && (
+                        <>
+                            <Separator orientation="vertical" className="mx-2 h-4" />
+                            <span className="font-normal">{value}</span>
+                        </>
+                    )}
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[250px] p-2" align="start">
+                <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase text-muted-foreground">
+                        {label}
+                    </Label>
+                    <div className="flex gap-2">
+                        <Input
+                            value={value}
+                            onChange={(e) => onChange(e.target.value)}
+                            placeholder={`Search ${label}...`}
+                            className="h-8"
+                            autoFocus
+                        />
+                        {value && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onRemove}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        )}
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
+    )
 }

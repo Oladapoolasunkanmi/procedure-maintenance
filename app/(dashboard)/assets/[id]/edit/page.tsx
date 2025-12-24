@@ -56,6 +56,9 @@ export default async function EditAssetPage({ params }: EditAssetPageProps) {
         assetType: asset.assetType,
         vendors: asset.vendors || "",
         parentAssetId: asset.parentAssetId,
+        files: asset.files || [],
+        images: asset.images || [],
+        parts: asset.parts,
     }
 
     return (
