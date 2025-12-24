@@ -92,6 +92,7 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
     const [barcodeMode, setBarcodeMode] = useState<"auto" | "manual">("auto")
     const [assetTree, setAssetTree] = useState<AssetTreeNode[]>([])
     const [teams, setTeams] = useState<any[]>([])
+    const [realLocations, setRealLocations] = useState<any[]>([])
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema) as any,
@@ -101,6 +102,7 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
             // If teamId is present in URL, pre-select it
             teamsInCharge: searchParams.get("teamId") ? [searchParams.get("teamId")!] : [],
             parentAssetId: searchParams.get("parentId") || undefined,
+            locationId: searchParams.get("locationId") || "",
         },
     })
 
@@ -169,8 +171,21 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
             }
         }
 
+        const fetchLocations = async () => {
+            try {
+                const res = await fetch('/api/locations?limit=1000')
+                const data = await res.json()
+                if (data.items) {
+                    setRealLocations(data.items.map((l: any) => ({ ...l, id: l._id || l.id })))
+                }
+            } catch (error) {
+                console.error("Failed to fetch locations:", error)
+            }
+        }
+
         fetchAssets()
         fetchTeams()
+        fetchLocations()
     }, [])
 
 
@@ -295,7 +310,7 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                    {locations.map((loc) => (
+                                                    {realLocations.map((loc) => (
                                                         <SelectItem key={loc.id} value={loc.id}>
                                                             {loc.name}
                                                         </SelectItem>

@@ -26,8 +26,12 @@ import {
     ArrowLeft,
     Edit,
     Link as LinkIcon,
-    ChevronRight
+    ChevronRight,
+    Printer,
+    Download,
+    Trash2
 } from "lucide-react"
+import QRCode from 'qrcode'
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -88,6 +92,17 @@ export function LocationsClient() {
     const [locationsList, setLocationsList] = React.useState<Location[]>([])
     const [isLoading, setIsLoading] = React.useState(true)
     const [nextBlockId, setNextBlockId] = React.useState<string | null>(null)
+    const [teams, setTeams] = React.useState<any[]>([])
+    const [filterConfig, setFilterConfig] = React.useState({
+        name: "",
+        asset: "",
+        team: "",
+        createdBy: ""
+    })
+    const [sortConfig, setSortConfig] = React.useState<{ key: 'name' | 'createdAt', direction: 'asc' | 'desc' }>({
+        key: 'createdAt',
+        direction: 'desc'
+    })
 
     const fetchLocations = React.useCallback(async (blockId?: string) => {
         setIsLoading(true)
@@ -102,7 +117,18 @@ export function LocationsClient() {
                 const mappedItems = data.items.map((item: any) => ({
                     ...item,
                     id: item.id || item._id,
+                    images: item.images || (item.image ? [item.image] : []),
+                    files: item.files || []
                 }))
+                // Local Filtering
+                // Note: ideally we should do this on backend, but for now we do client side as per request flow
+                // We will filter based on the available data. For 'asset', we need assets data, which we don't fetch globally here.
+                // However, the user asked for filtering. 
+                // To do asset filtering efficiently without backend changes, we'd need to fetch all assets or rely on backend.
+                // Assuming backend filtering isn't readily available for searching by asset name in location, 
+                // we might need to fetch assets or just ignore the deep asset search for now and implement name/team/createdby.
+                // WAIT, I can fetch all assets for the filtering logic if needed, or better, update the display list based on state.
+
                 setLocationsList(prev => blockId ? [...prev, ...mappedItems] : mappedItems)
                 setNextBlockId(data.next_block_id || null)
             }
@@ -113,13 +139,82 @@ export function LocationsClient() {
         }
     }, [])
 
+    // Fetch assets for filtering purposes
+    const [allAssets, setAllAssets] = React.useState<Asset[]>([])
+    React.useEffect(() => {
+        const fetchAssets = async () => {
+            try {
+                const res = await fetch('/api/assets?limit=2000') // Fetch many for filtering
+                const data = await res.json()
+                if (data.items) {
+                    setAllAssets(data.items.map((a: any) => ({ ...a, id: a._id || a.id })))
+                }
+            } catch (error) {
+                console.error("Failed to fetch assets for filtering:", error)
+            }
+        }
+        fetchAssets()
+    }, [])
+
+    const fetchTeams = React.useCallback(async () => {
+        try {
+            const res = await fetch('/api/teams')
+            const data = await res.json()
+            if (data.items) {
+                setTeams(data.items.map((t: any) => ({ ...t, id: t._id || t.id })))
+            }
+        } catch (error) {
+            console.error("Failed to fetch teams:", error)
+        }
+    }, [])
+
     React.useEffect(() => {
         fetchLocations()
-    }, [fetchLocations])
+        fetchTeams()
+    }, [fetchLocations, fetchTeams])
+
+    const filteredLocations = React.useMemo(() => {
+        const filtered = locationsList.filter(loc => {
+            const matchName = filterConfig.name ? loc.name.toLowerCase().includes(filterConfig.name.toLowerCase()) : true
+            const matchTeam = filterConfig.team ? (loc.teamsInCharge || []).some(tId => {
+                const t = teams.find(team => team.id === tId)
+                return t && t.name.toLowerCase().includes(filterConfig.team.toLowerCase())
+            }) : true
+            const matchCreatedBy = filterConfig.createdBy ? (loc.createdBy?.name || "").toLowerCase().includes(filterConfig.createdBy.toLowerCase()) : true
+            let matchAsset = true
+            if (filterConfig.asset) {
+                const term = filterConfig.asset.toLowerCase()
+                // Find assets that match the term
+                const matchingAssets = allAssets.filter(a => a.name.toLowerCase().includes(term))
+                // Check if this location contains any of those assets
+                // Assuming assets have locationId
+                const locationAssetIds = matchingAssets.filter(a => a.locationId === loc.id)
+                matchAsset = locationAssetIds.length > 0
+            }
+
+            return matchName && matchTeam && matchCreatedBy && matchAsset
+        })
+
+        // Sorting
+        return filtered.sort((a, b) => {
+            if (sortConfig.key === 'name') {
+                return sortConfig.direction === 'asc'
+                    ? a.name.localeCompare(b.name)
+                    : b.name.localeCompare(a.name)
+            } else if (sortConfig.key === 'createdAt') {
+                const dateA = new Date(a.createdAt || 0).getTime()
+                const dateB = new Date(b.createdAt || 0).getTime()
+                return sortConfig.direction === 'asc'
+                    ? dateA - dateB
+                    : dateB - dateA
+            }
+            return 0
+        })
+    }, [locationsList, filterConfig, teams, allAssets, sortConfig])
 
     const selectedLocation = React.useMemo(() => {
-        return locationsList.find((l) => l.id === selectedId)
-    }, [selectedId, locationsList])
+        return filteredLocations.find((l) => l.id === selectedId)
+    }, [selectedId, filteredLocations])
 
     const handleSelect = (id: string) => {
         const params = new URLSearchParams(searchParams)
@@ -143,67 +238,48 @@ export function LocationsClient() {
 
                 {/* Filters */}
                 <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-                    {activeFilters.map((filter) => {
-                        const option = filterOptions.find(o => o.label === filter)
-                        const Icon = option?.icon || Box
-                        return (
-                            <Button key={filter} variant="outline" size="sm" className="h-9 border-dashed text-muted-foreground bg-accent/50">
-                                <Icon className="mr-2 h-3.5 w-3.5" />
-                                {filter}
-                                <span
-                                    className="ml-2 hover:text-foreground cursor-pointer"
-                                    onClick={(e) => {
-                                        e.stopPropagation()
-                                        setActiveFilters(prev => prev.filter(f => f !== filter))
-                                    }}
-                                >
-                                    &times;
-                                </span>
-                            </Button>
-                        )
-                    })}
+                    <FilterButton label="Name" icon={Box} value={filterConfig.name} onChange={(val) => setFilterConfig(prev => ({ ...prev, name: val }))} />
+                    <FilterButton label="Assets" icon={Network} value={filterConfig.asset} onChange={(val) => setFilterConfig(prev => ({ ...prev, asset: val }))} />
+                    <FilterButton label="Teams" icon={Users} value={filterConfig.team} onChange={(val) => setFilterConfig(prev => ({ ...prev, team: val }))} />
+                    <FilterButton label="Created By" icon={Users} value={filterConfig.createdBy} onChange={(val) => setFilterConfig(prev => ({ ...prev, createdBy: val }))} />
 
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-9 border border-primary/20 text-primary bg-primary/5 hover:bg-primary/10 hover:text-primary">
-                                <Plus className="mr-2 h-3.5 w-3.5" />
-                                Add Filter
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[200px] p-0" align="start">
-                            <Command>
-                                <CommandInput placeholder="Search..." />
-                                <CommandList>
-                                    <CommandEmpty>No filter found.</CommandEmpty>
-                                    <CommandGroup>
-                                        {filterOptions.map((option) => (
-                                            <CommandItem
-                                                key={option.label}
-                                                value={option.label}
-                                                onSelect={() => {
-                                                    if (!activeFilters.includes(option.label)) {
-                                                        setActiveFilters([...activeFilters, option.label])
-                                                    }
-                                                }}
-                                            >
-                                                <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                                                {option.label}
-                                            </CommandItem>
-                                        ))}
-                                    </CommandGroup>
-                                </CommandList>
-                            </Command>
-                        </PopoverContent>
-                    </Popover>
+                    {(filterConfig.name || filterConfig.asset || filterConfig.team || filterConfig.createdBy) && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setFilterConfig({ name: "", asset: "", team: "", createdBy: "" })}
+                            className="h-9 px-2 text-muted-foreground hover:text-foreground"
+                        >
+                            <Trash2 className="mr-2 h-3.5 w-3.5" />
+                            Clear Filters
+                        </Button>
+                    )}
                 </div>
 
                 {/* Sort By */}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>Sort By:</span>
-                    <Button variant="ghost" size="sm" className="h-auto p-0 text-muted-foreground font-bold hover:bg-transparent hover:text-muted-foreground/80">
-                        Name: Ascending Order
-                        <ChevronDown className="ml-1 h-3 w-3" />
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-auto p-0 text-muted-foreground font-bold hover:bg-transparent hover:text-muted-foreground/80 gap-1">
+                                {sortConfig.key === 'createdAt'
+                                    ? (sortConfig.direction === 'desc' ? "Latest" : "Oldest")
+                                    : (sortConfig.direction === 'asc' ? "Name: Ascending" : "Name: Descending")}
+                                <ChevronDown className="h-3 w-3" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setSortConfig({ key: 'name', direction: 'asc' })}>
+                                Name: Ascending Order
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setSortConfig({ key: 'name', direction: 'desc' })}>
+                                Name: Descending Order
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setSortConfig({ key: 'createdAt', direction: 'desc' })}>
+                                Latest (Default)
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
 
                 <ScrollArea className="flex-1 border rounded-md bg-white">
@@ -215,8 +291,8 @@ export function LocationsClient() {
                             </div>
                         ) : (
                             <>
-                                {locationsList.filter(l => !l.parentLocationId).map((location) => {
-                                    const calculatedSubLocationsCount = countAllDescendants(location.id, locationsList)
+                                {filteredLocations.filter(l => !l.parentLocationId).map((location) => {
+                                    const calculatedSubLocationsCount = countAllDescendants(location.id, filteredLocations)
                                     const displayCount = location.subLocationsCount || calculatedSubLocationsCount
 
                                     return (
@@ -228,20 +304,17 @@ export function LocationsClient() {
                                         />
                                     )
                                 })}
-                                {locationsList.length === 0 && (
+                                {filteredLocations.length === 0 && (
                                     <div className="flex flex-col items-center justify-center p-12 text-center">
                                         <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
                                             <MapPin className="h-8 w-8 text-muted-foreground" />
                                         </div>
                                         <h3 className="text-lg font-semibold mb-1">No locations found</h3>
                                         <p className="text-muted-foreground max-w-sm mb-6">
-                                            Get started by creating your first location to organize your assets and work orders.
+                                            Try adjusting your filters or create a new location.
                                         </p>
-                                        <Button asChild>
-                                            <Link href="/locations/new">
-                                                <Plus className="mr-2 h-4 w-4" />
-                                                New Location
-                                            </Link>
+                                        <Button variant="ghost" onClick={() => setFilterConfig({ name: "", asset: "", team: "", createdBy: "" })}>
+                                            Clear Filters
                                         </Button>
                                     </div>
                                 )}
@@ -267,7 +340,8 @@ export function LocationsClient() {
                 <div className={cn("flex-1 flex flex-col overflow-hidden rounded-lg border bg-background shadow-sm transition-all duration-300", !selectedId && "hidden md:flex")}>
                     <LocationDetail
                         location={selectedLocation}
-                        allLocations={locationsList}
+                        allLocations={filteredLocations}
+                        teams={teams}
                         onClose={() => router.replace(pathname)}
                         onSelect={handleSelect}
                     />
@@ -282,6 +356,35 @@ export function LocationsClient() {
                 </div>
             )}
         </div>
+    )
+}
+
+// Helper component for filter buttons
+function FilterButton({ label, icon: Icon, value, onChange }: { label: string, icon: any, value: string, onChange: (val: string) => void }) {
+    const [isOpen, setIsOpen] = React.useState(false)
+    return (
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
+            <PopoverTrigger asChild>
+                <Button variant={value ? "secondary" : "outline"} size="sm" className="h-9 border-dashed">
+                    <Icon className="mr-2 h-3.5 w-3.5" />
+                    {label}
+                    {value && <span className="ml-1 bg-background/50 px-1.5 py-0.5 rounded text-xs font-semibold">{value}</span>}
+                    <ChevronDown className="ml-2 h-3 w-3 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-2" align="start">
+                <div className="space-y-2">
+                    <Label className="text-xs font-semibold">{label}</Label>
+                    <Input
+                        placeholder={`Search ${label}...`}
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        className="h-8"
+                        autoFocus
+                    />
+                </div>
+            </PopoverContent>
+        </Popover>
     )
 }
 
@@ -374,13 +477,100 @@ function SubLocationNode({ location, allLocations, onSelect }: { location: Locat
     )
 }
 
-function LocationDetail({ location, allLocations, onClose, onSelect }: { location: Location; allLocations: Location[]; onClose: () => void; onSelect: (id: string) => void }) {
+function LocationDetail({ location, allLocations, teams, onClose, onSelect }: { location: Location; allLocations: Location[]; teams: any[]; onClose: () => void; onSelect: (id: string) => void }) {
     const router = useRouter()
     const [activeTab, setActiveTab] = React.useState("details")
     const [indicatorStyle, setIndicatorStyle] = React.useState({ left: 0, width: 0 })
     const tabsListRef = React.useRef<HTMLDivElement>(null)
+    const [qrCodeUrl, setQrCodeUrl] = React.useState<string>("")
+    const [assets, setAssets] = React.useState<Asset[]>([])
+    const [isDeleting, setIsDeleting] = React.useState(false)
+    const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
 
     const subLocationsCount = countAllDescendants(location.id, allLocations)
+
+    // Fetch assets for this location
+    React.useEffect(() => {
+        const fetchLocationAssets = async () => {
+            // In real app, querying by locationId would be better. For now we can fetch filtered list or all list.
+            // We can use the existing /api/assets endpoint with filtering if supported, or just filter in client if we have data.
+            // But to be safe and scalable, we should fetch. 
+            // Assuming we have an endpoint that accepts ?limit=1000. 
+            // Optimally we'd have ?locationId=... supported by backend.
+            try {
+                const res = await fetch('/api/assets?limit=1000')
+                const data = await res.json()
+                if (data.items) {
+                    const locAssets = data.items.filter((a: any) => (a.locationId === location.id) || (a.locationId === location._id)) // check both IDs
+                    setAssets(locAssets.map((a: any) => ({ ...a, id: a._id || a.id })))
+                }
+            } catch (error) {
+                console.error("Failed to fetch location assets", error)
+            }
+        }
+        if (location.id) fetchLocationAssets()
+    }, [location.id])
+
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const url = `${window.location.origin}/locations?id=${location.id}`
+            QRCode.toDataURL(url)
+                .then(url => {
+                    setQrCodeUrl(url)
+                })
+                .catch(err => {
+                    console.error("Error generating QR code", err)
+                })
+        }
+    }, [location.id])
+
+    const handlePrintQr = () => {
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Print QR Code - ${location.name}</title>
+                    <style>
+                        body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
+                        h2 { margin-bottom: 20px; font-size: 2em; }
+                        img { max-width: 600px; width: 100%; height: auto; }
+                        p { margin-top: 10px; font-weight: bold; font-size: 1.5em; }
+                    </style>
+                </head>
+                <body>
+                    <h2>${location.name}</h2>
+                    <img src="${qrCodeUrl}" id="qr-img" />
+                    <p>${location.barcode || location.id}</p>
+                    <script>
+                        // Wait for image to load before printing
+                        document.getElementById('qr-img').onload = function() {
+                             setTimeout(function() {
+                                window.print();
+                             }, 200);
+                        }
+                    </script>
+                </body>
+                </html>
+             `);
+            printWindow.document.close();
+        }
+    }
+
+    const handleDelete = async () => {
+        setIsDeleting(true)
+        try {
+            const res = await fetch(`/api/locations?id=${location.id}`, { method: 'DELETE' })
+            if (!res.ok) throw new Error("Failed to delete")
+            // refresh page
+            window.location.href = "/locations"
+        } catch (error) {
+            console.error(error)
+            // toast error
+        } finally {
+            setIsDeleting(false)
+        }
+    }
 
     React.useEffect(() => {
         const updateIndicator = () => {
@@ -423,9 +613,37 @@ function LocationDetail({ location, allLocations, onClose, onSelect }: { locatio
                         <Edit className="mr-2 h-4 w-4" />
                         Edit
                     </Button>
-                    <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem className="text-destructive" onClick={() => setShowDeleteDialog(true)}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Location
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Delete Location</DialogTitle>
+                                <DialogDescription>
+                                    Are you sure you want to delete <strong>{location.name}</strong>? This action cannot be undone.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
+                                <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Delete
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
 
@@ -478,9 +696,14 @@ function LocationDetail({ location, allLocations, onClose, onSelect }: { locatio
                                 <h3 className="font-semibold">Teams in Charge</h3>
                                 <div className="flex flex-wrap gap-2">
                                     {location.teamsInCharge && location.teamsInCharge.length > 0 ? (
-                                        location.teamsInCharge.map(team => (
-                                            <Badge key={team} variant="secondary">{team}</Badge>
-                                        ))
+                                        location.teamsInCharge.map(teamId => {
+                                            const team = teams.find(t => t.id === teamId)
+                                            return team ? (
+                                                <Badge key={teamId} variant="secondary">{team.name}</Badge>
+                                            ) : (
+                                                <Badge key={teamId} variant="outline" className="text-muted-foreground">UNKNOWN TEAM ({teamId})</Badge>
+                                            )
+                                        })
                                     ) : (
                                         <span className="text-sm text-muted-foreground">-</span>
                                     )}
@@ -498,9 +721,27 @@ function LocationDetail({ location, allLocations, onClose, onSelect }: { locatio
 
                             <div className="space-y-1">
                                 <h3 className="font-semibold">Barcode</h3>
-                                <div className="flex items-center gap-2">
-                                    <QrCode className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-sm text-muted-foreground">{location.barcode || "-"}</span>
+                                <div className="flex items-start gap-4">
+                                    {qrCodeUrl ? (
+                                        <div className="flex flex-col gap-2">
+                                            <img src={qrCodeUrl} alt="QR Code" className="w-24 h-24 border rounded-md" />
+                                            <Button variant="outline" size="sm" onClick={handlePrintQr} className="w-full">
+                                                <Printer className="w-3 h-3 mr-2" />
+                                                Print
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="w-24 h-24 bg-muted animate-pulse rounded-md" />
+                                    )}
+                                    <div className="flex flex-col gap-1 pt-1">
+                                        <div className="flex items-center gap-2">
+                                            <QrCode className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-sm font-medium">{location.barcode || (location.id ? `LOC-${location.id.substring(0, 8)}` : "-")}</span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground max-w-[150px]">
+                                            Scan to view location details.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -531,21 +772,90 @@ function LocationDetail({ location, allLocations, onClose, onSelect }: { locatio
 
                         <Separator />
 
-                        {/* Assets Placeholder */}
+                        {/* Assets Section - Updated */}
                         <div className="space-y-4">
                             <h3 className="font-semibold flex items-center gap-2">
                                 <Building2 className="h-4 w-4" />
-                                Assets
+                                Assets ({assets.length})
                             </h3>
-                            <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-                                No assets in this location.
-                                <Button variant="link" className="h-auto p-0 ml-1">Add Asset</Button>
-                            </div>
+                            {assets.length > 0 ? (
+                                <div className="space-y-2">
+                                    {assets.map(asset => (
+                                        <div key={asset.id} className="flex items-center justify-between p-2 rounded-md border bg-muted/20 hover:bg-muted/50 transition-colors group">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded bg-background border flex items-center justify-center text-xs font-bold">
+                                                    {asset.name.substring(0, 1)}
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <Link href={`/assets?id=${asset.id}`} className="text-sm font-medium hover:underline">{asset.name}</Link>
+                                                    <span className="text-xs text-muted-foreground">{asset.model || "No model"}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant="outline" className={cn("text-xs font-normal", asset.status === 'Online' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200')}>
+                                                    {asset.status}
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <div className="pt-2">
+                                        <Button variant="link" className="h-auto p-0 ml-1 text-primary" onClick={() => router.push(`/assets/new?locationId=${location.id}`)}>+ Add another Asset</Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
+                                    No assets in this location.
+                                    <Button variant="link" className="h-auto p-0 ml-1 text-primary" onClick={() => router.push(`/assets/new?locationId=${location.id}`)}>Add Asset</Button>
+                                </div>
+                            )}
                         </div>
+                    </TabsContent>
 
-                        {/* Created By */}
-                        <div className="pt-4 text-xs text-muted-foreground flex items-center gap-1">
-                            Created By <span className="font-medium text-foreground">Rafael Boeira</span> on 12/19/2025, 4:33 PM
+                    {/* HISTORY TAB */}
+                    <TabsContent value="history" className="m-0 p-6 space-y-6">
+                        <div className="space-y-4">
+                            <h3 className="font-semibold">Activity History</h3>
+                            <div className="border rounded-md divide-y">
+                                {location.createdAt && (
+                                    <div className="p-4 flex flex-col gap-1">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <Clock className="h-4 w-4" />
+                                            <span>Created on {new Date(location.createdAt).toLocaleString()}</span>
+                                        </div>
+                                        {location.createdBy && (
+                                            <div className="flex items-center gap-2 text-sm mt-1">
+                                                <Avatar className="h-6 w-6">
+                                                    <AvatarImage src="" />
+                                                    <AvatarFallback className="text-[10px]">{location.createdBy.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                                </Avatar>
+                                                <span>Created by <span className="font-medium text-foreground">{location.createdBy.name}</span></span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {location.updatedAt && location.updatedAt !== location.createdAt && (
+                                    <div className="p-4 flex flex-col gap-1">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <Edit className="h-4 w-4" />
+                                            <span>Last updated on {new Date(location.updatedAt).toLocaleString()}</span>
+                                        </div>
+                                        {location.updatedBy && (
+                                            <div className="flex items-center gap-2 text-sm mt-1">
+                                                <Avatar className="h-6 w-6">
+                                                    <AvatarImage src="" />
+                                                    <AvatarFallback className="text-[10px]">{location.updatedBy.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                                </Avatar>
+                                                <span>Updated by <span className="font-medium text-foreground">{location.updatedBy.name}</span></span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {!location.createdAt && (
+                                    <div className="p-4 text-sm text-muted-foreground text-center">
+                                        No history data available.
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </TabsContent>
                 </div>

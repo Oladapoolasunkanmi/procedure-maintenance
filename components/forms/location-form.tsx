@@ -57,6 +57,8 @@ const formSchema = z.object({
     barcode: z.string().optional(),
     vendors: z.string().optional(),
     parentLocationId: z.string().optional(),
+    images: z.array(z.string()).optional(),
+    files: z.array(z.string()).optional(),
 })
 
 interface LocationFormProps {
@@ -78,20 +80,81 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
     const [barcodeMode, setBarcodeMode] = useState<"auto" | "manual">("auto")
     const [locationTree, setLocationTree] = useState<LocationTreeNode[]>([])
     const [teams, setTeams] = useState<any[]>([])
+    const [isUploadingImage, setIsUploadingImage] = useState(false)
+    const [isUploadingFile, setIsUploadingFile] = useState(false)
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema) as any,
-        defaultValues: initialData || {
-            name: searchParams.get("name") || "",
-            address: "",
-            description: "",
-            // If teamId is present in URL, pre-select it
-            teamsInCharge: searchParams.get("teamId") ? [searchParams.get("teamId")!] : [],
-            barcode: "",
-            vendors: "",
-            parentLocationId: searchParams.get("parentId") || undefined,
+        defaultValues: {
+            name: initialData?.name || searchParams.get("name") || "",
+            address: initialData?.address || "",
+            description: initialData?.description || "",
+            teamsInCharge: initialData?.teamsInCharge || (searchParams.get("teamId") ? [searchParams.get("teamId")!] : []),
+            barcode: initialData?.barcode || "",
+            vendors: initialData?.vendors || "",
+            parentLocationId: initialData?.parentLocationId || searchParams.get("parentId") || undefined,
+            images: initialData?.images || [],
+            files: initialData?.files || [],
         },
     })
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'file') => {
+        const files = e.target.files
+        if (!files || files.length === 0) return
+
+        const setIsUploading = type === 'image' ? setIsUploadingImage : setIsUploadingFile
+        const fieldName = type === 'image' ? 'images' : 'files'
+
+        setIsUploading(true)
+        try {
+            const newUrls: string[] = []
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i]
+                const formData = new FormData()
+
+                // Sanitize filename for the path
+                const parts = file.name.split('.')
+                const ext = parts.pop()
+                const base = parts.join('.')
+                const sanitizedBase = base.replace(/[^a-zA-Z0-9]/g, "")
+                const path = `andechser_maintenance_system/${type}s/${sanitizedBase}_${Date.now()}.${ext}`
+
+                formData.append("path", path)
+                formData.append("file", file)
+
+                const res = await fetch("/api/upload", {
+                    method: "POST",
+                    body: formData,
+                })
+
+                if (!res.ok) throw new Error(`Upload failed for ${file.name}`)
+
+                const data = await res.json()
+                newUrls.push(data.path || data.url) // Assuming API returns path or url
+            }
+
+            const currentValues = form.getValues(fieldName) || []
+            form.setValue(fieldName, [...currentValues, ...newUrls])
+
+            toast({
+                title: "Upload successful",
+                description: `${files.length} ${type}(s) uploaded.`,
+            })
+
+        } catch (error) {
+            console.error(error)
+            toast({
+                title: "Upload failed",
+                description: "Failed to upload files",
+                variant: "destructive"
+            })
+        } finally {
+            setIsUploading(false)
+            // Reset input
+            e.target.value = ""
+        }
+    }
 
     // Fetch locations and build tree
     useEffect(() => {
@@ -231,15 +294,60 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                             />
 
                             {/* 2. Add Pictures */}
-                            <div className="space-y-2">
-                                <FormLabel>Pictures</FormLabel>
-                                <div className="rounded-lg border border-dashed px-8 py-10 text-center hover:bg-accent/40 hover:border-primary transition-colors cursor-pointer">
-                                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                        <Upload className="h-8 w-8" />
-                                        <span className="text-sm font-medium">Add or drag pictures</span>
-                                    </div>
-                                </div>
-                            </div>
+                            <FormField
+                                control={form.control}
+                                name="images"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Pictures</FormLabel>
+                                        <FormControl>
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                    {(field.value || []).map((url, index) => (
+                                                        <div key={index} className="relative aspect-square rounded-lg overflow-hidden border bg-muted group">
+                                                            <img
+                                                                src={`/api/image?path=${encodeURIComponent(url)}`}
+                                                                alt={`Preview ${index}`}
+                                                                className="object-cover w-full h-full"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const newValue = [...field.value!]
+                                                                    newValue.splice(index, 1)
+                                                                    field.onChange(newValue)
+                                                                }}
+                                                                className="absolute top-1 right-1 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                <X className="h-3 w-3" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    <label className="relative aspect-square rounded-lg border border-dashed flex flex-col items-center justify-center cursor-pointer hover:bg-accent/40 hover:border-primary transition-colors">
+                                                        {isUploadingImage ? (
+                                                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                                                        ) : (
+                                                            <>
+                                                                <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                                                                <span className="text-xs text-muted-foreground font-medium">Add Pictures</span>
+                                                            </>
+                                                        )}
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            multiple
+                                                            className="hidden"
+                                                            onChange={(e) => handleFileUpload(e, 'image')}
+                                                            disabled={isUploadingImage}
+                                                        />
+                                                    </label>
+                                                </div>
+                                                <FormMessage />
+                                            </div>
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
 
                             {/* 3. Address */}
                             <FormField
@@ -396,15 +504,63 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                             </div>
 
                             {/* 7. Attach Files */}
-                            <div className="space-y-2">
-                                <FormLabel>Files</FormLabel>
-                                <div className="rounded-lg border border-dashed px-8 py-6 text-center hover:bg-accent/40 hover:border-primary transition-colors cursor-pointer">
-                                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                        <FileText className="h-8 w-8" />
-                                        <span className="text-sm font-medium">Add or drag files</span>
-                                    </div>
-                                </div>
-                            </div>
+                            <FormField
+                                control={form.control}
+                                name="files"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Files</FormLabel>
+                                        <FormControl>
+                                            <div className="space-y-3">
+                                                <div className="flex flex-wrap gap-2">
+                                                    {(field.value || []).map((url, index) => {
+                                                        const fileName = url.split('/').pop() || "Filed"
+                                                        return (
+                                                            <Badge key={index} variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+                                                                <FileText className="h-3 w-3 mr-1" />
+                                                                <span className="max-w-[150px] truncate" title={fileName}>{fileName}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const newValue = [...field.value!]
+                                                                        newValue.splice(index, 1)
+                                                                        field.onChange(newValue)
+                                                                    }}
+                                                                    className="ml-1 hover:bg-destructive/10 hover:text-destructive rounded-full p-0.5"
+                                                                >
+                                                                    <X className="h-3 w-3" />
+                                                                </button>
+                                                            </Badge>
+                                                        )
+                                                    })}
+                                                </div>
+
+                                                <label className="flex items-center justify-center w-full rounded-lg border border-dashed px-8 py-6 text-center hover:bg-accent/40 hover:border-primary transition-colors cursor-pointer relative">
+                                                    {isUploadingFile ? (
+                                                        <div className="flex flex-col items-center">
+                                                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mb-2" />
+                                                            <span className="text-sm text-muted-foreground">Uploading...</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                                                            <FileText className="h-6 w-6" />
+                                                            <span className="text-sm font-medium">Click to upload files</span>
+                                                        </div>
+                                                    )}
+                                                    <input
+                                                        type="file"
+                                                        multiple
+                                                        className="hidden"
+                                                        onChange={(e) => handleFileUpload(e, 'file')}
+                                                        disabled={isUploadingFile}
+                                                    />
+                                                </label>
+                                                <FormMessage />
+                                            </div>
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
 
                             {/* 8. Vendor */}
                             <FormField

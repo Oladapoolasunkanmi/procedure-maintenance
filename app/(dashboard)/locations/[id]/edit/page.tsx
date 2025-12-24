@@ -44,6 +44,8 @@ export default async function EditLocationPage({ params }: EditLocationPageProps
         barcode: location.barcode || "",
         vendors: Array.isArray(location.vendors) ? location.vendors.join(", ") : (location.vendors || ""),
         parentLocationId: location.parentLocationId,
+        images: location.images || (location.image ? [location.image] : []),
+        files: location.files || [],
     }
 
     return (

@@ -13,6 +13,7 @@ export interface User {
 
 export interface Location {
     id: string;
+    _id?: string;
     name: string;
     address?: string;
     description?: string;
@@ -24,6 +25,16 @@ export interface Location {
     vendors?: string[];
     parentLocationId?: string;
     subLocationsCount?: number;
+    createdAt?: string;
+    createdBy?: {
+        id: string;
+        name: string;
+    };
+    updatedAt?: string;
+    updatedBy?: {
+        id: string;
+        name: string;
+    };
 }
 
 export interface Asset {

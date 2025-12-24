@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { apiClient } from '@/lib/axios';
+import { getSessionOrNull } from '@/auth/session';
 
 export async function GET(request: Request) {
     try {
@@ -29,11 +30,25 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const locationData = await request.json();
+        const session = await getSessionOrNull();
+        const now = new Date().toISOString();
 
         const payload = {
             db_name: "andechser_maintenance_system",
             coll_name: "locations",
-            item: locationData
+            item: {
+                ...locationData,
+                createdAt: now,
+                createdBy: session ? {
+                    id: session.sub,
+                    name: session.name
+                } : undefined,
+                updatedAt: now,
+                updatedBy: session ? {
+                    id: session.sub,
+                    name: session.name
+                } : undefined
+            }
         };
 
         const response = await apiClient.post('/api/v2/cosmosdb/items', payload);
@@ -56,6 +71,8 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: "Location ID is required" }, { status: 400 });
         }
 
+        const session = await getSessionOrNull();
+
         const payload = {
             db_name: "andechser_maintenance_system",
             coll_name: "locations",
@@ -63,7 +80,14 @@ export async function PUT(request: Request) {
                 _id: id
             },
             update: {
-                "$set": updateData
+                "$set": {
+                    ...updateData,
+                    updatedAt: new Date().toISOString(),
+                    updatedBy: session ? {
+                        id: session.sub,
+                        name: session.name
+                    } : undefined
+                }
             }
         };
 
@@ -73,6 +97,35 @@ export async function PUT(request: Request) {
         console.error("Error updating location:", error);
         return NextResponse.json(
             { error: error.message || "Failed to update location" },
+            { status: error.response?.status || 500 }
+        );
+    }
+}
+
+export async function DELETE(request: Request) {
+    try {
+        const { searchParams } = new URL(request.url);
+        const id = searchParams.get('id');
+
+        if (!id) {
+            return NextResponse.json({ error: "Location ID is required" }, { status: 400 });
+        }
+
+        const payload = {
+            db_name: "andechser_maintenance_system",
+            coll_name: "locations",
+            filters: {
+                _id: id
+            }
+        };
+
+        // Use standard DELETE method with payload
+        const response = await apiClient.delete('/api/v2/cosmosdb/items', { data: payload });
+        return NextResponse.json(response.data);
+    } catch (error: any) {
+        console.error("Error deleting location:", error);
+        return NextResponse.json(
+            { error: error.message || "Failed to delete location" },
             { status: error.response?.status || 500 }
         );
     }
