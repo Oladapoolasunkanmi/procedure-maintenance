@@ -9,6 +9,7 @@ import * as z from "zod"
 import { format } from "date-fns"
 import { CalendarIcon, Check, ChevronsUpDown, Upload, X, QrCode, FileText, ChevronRight, ChevronDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -87,6 +88,7 @@ interface TreeNode {
 }
 
 export function AssetForm({ initialData, isEditing = false, assetId }: AssetFormProps) {
+    const t = useTranslations('AssetForm')
     const router = useRouter()
     const { toast } = useToast()
     const searchParams = useSearchParams()
@@ -152,7 +154,7 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                     }
                 } else {
                     console.error("Upload failed", await uploadRes.text())
-                    toast({ title: "Upload failed", description: "Could not upload file.", variant: "destructive" })
+                    toast({ title: t('messages.errorTitle'), description: "Could not upload file.", variant: "destructive" })
                 }
             }
 
@@ -160,7 +162,7 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
             form.setValue(fieldName as any, [...current, ...newUrls])
         } catch (error) {
             console.error("Upload failed", error)
-            toast({ title: "Upload failed", variant: "destructive" })
+            toast({ title: t('messages.errorTitle'), variant: "destructive" })
         } finally {
             setIsUploading(false)
         }
@@ -307,8 +309,8 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
             const data = await response.json()
 
             toast({
-                title: isEditing ? "Asset Updated" : "Asset Created",
-                description: `Successfully ${isEditing ? "updated" : "created"} asset ${values.name}.`,
+                title: isEditing ? t('messages.updated') : t('messages.created'),
+                description: isEditing ? t('messages.successUpdate', { name: values.name }) : t('messages.successCreate', { name: values.name }),
             })
 
             if (isEditing && assetId) {
@@ -321,8 +323,8 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
         } catch (error) {
             console.error("Failed to save asset:", error)
             toast({
-                title: "Error",
-                description: "Failed to save asset. Please try again.",
+                title: t('messages.errorTitle'),
+                description: t('messages.errorDesc'),
                 variant: "destructive",
             })
         }
@@ -331,8 +333,8 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
     return (
         <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto w-full pb-24">
             <div className="text-left">
-                <h1 className="text-2xl font-bold tracking-tight">{isEditing ? "Edit Asset" : "New Asset"}</h1>
-                <p className="text-muted-foreground">{isEditing ? "Edit existing asset details." : "Register a new asset in the system."}</p>
+                <h1 className="text-2xl font-bold tracking-tight">{isEditing ? t('editTitle') : t('newTitle')}</h1>
+                <p className="text-muted-foreground">{isEditing ? t('editDesc') : t('newDesc')}</p>
             </div>
 
             <Card className="bg-card border rounded-lg shadow-none w-full">
@@ -346,9 +348,9 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                 name="name"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Name</FormLabel>
+                                        <FormLabel>{t('labels.name')}</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g. Forklift #9" {...field} />
+                                            <Input placeholder={t('placeholders.name')} {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -357,7 +359,7 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
 
                             {/* 2. Pictures */}
                             <div className="space-y-2">
-                                <FormLabel>Pictures</FormLabel>
+                                <FormLabel>{t('labels.pictures')}</FormLabel>
                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                     {form.watch("images")?.map((url, index) => (
                                         <div key={index} className="relative aspect-video rounded-lg border bg-muted overflow-hidden group">
@@ -390,14 +392,14 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                         ) : (
                                             <Upload className="h-8 w-8" />
                                         )}
-                                        <span className="text-sm font-medium">{isUploadingImage ? "Uploading..." : "Add or drag pictures"}</span>
+                                        <span className="text-sm font-medium">{isUploadingImage ? t('buttons.uploading') : t('buttons.addPicture')}</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* 3. Files */}
                             <div className="space-y-2">
-                                <FormLabel>Files</FormLabel>
+                                <FormLabel>{t('labels.files')}</FormLabel>
                                 <div className="flex flex-wrap gap-2 mb-4">
                                     {form.watch("files")?.map((file, index) => (
                                         <Badge key={index} variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
@@ -429,7 +431,7 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                         ) : (
                                             <FileText className="h-8 w-8" />
                                         )}
-                                        <span className="text-sm font-medium">{isUploadingFile ? "Uploading..." : "Add or drag files"}</span>
+                                        <span className="text-sm font-medium">{isUploadingFile ? t('buttons.uploading') : t('buttons.addFile')}</span>
                                     </div>
                                 </div>
                             </div>
@@ -441,7 +443,7 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                     name="locationId"
                                     render={({ field }) => (
                                         <FormItem className="flex flex-col">
-                                            <FormLabel>Location</FormLabel>
+                                            <FormLabel>{t('labels.location')}</FormLabel>
                                             <Popover>
                                                 <PopoverTrigger asChild>
                                                     <FormControl>
@@ -455,14 +457,14 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                                         >
                                                             {field.value
                                                                 ? findNodeName(locationTree, field.value) || field.value
-                                                                : "Select location"}
+                                                                : t('placeholders.selectLocation')}
                                                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                         </Button>
                                                     </FormControl>
                                                 </PopoverTrigger>
                                                 <PopoverContent className="w-[400px] p-0" align="start">
                                                     <Command>
-                                                        <CommandInput placeholder="Search location..." />
+                                                        <CommandInput placeholder={t('placeholders.searchLocation')} />
                                                         <CommandList>
                                                             <CommandEmpty>No location found.</CommandEmpty>
                                                             <CommandGroup>
@@ -489,11 +491,11 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                     name="criticality"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Criticality</FormLabel>
+                                            <FormLabel>{t('labels.criticality')}</FormLabel>
                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                 <FormControl>
                                                     <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Select criticality" />
+                                                        <SelectValue placeholder={t('placeholders.selectCriticality')} />
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
@@ -515,9 +517,9 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                 name="description"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Description</FormLabel>
+                                        <FormLabel>{t('labels.description')}</FormLabel>
                                         <FormControl>
-                                            <Textarea placeholder="Asset description..." className="resize-none" {...field} />
+                                            <Textarea placeholder={t('placeholders.description')} className="resize-none" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -530,9 +532,9 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                 name="year"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Year</FormLabel>
+                                        <FormLabel>{t('labels.year')}</FormLabel>
                                         <FormControl>
-                                            <Input type="number" placeholder="e.g. 2023" {...field} value={field.value ?? ''} />
+                                            <Input type="number" placeholder={t('placeholders.year')} {...field} value={field.value ?? ''} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -546,9 +548,9 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                     name="manufacturer"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Manufacturer</FormLabel>
+                                            <FormLabel>{t('labels.manufacturer')}</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="e.g. Caterpillar" {...field} />
+                                                <Input placeholder={t('placeholders.manufacturer')} {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -559,9 +561,9 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                     name="model"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Model</FormLabel>
+                                            <FormLabel>{t('labels.model')}</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="e.g. GP15-35(C)N" {...field} />
+                                                <Input placeholder={t('placeholders.model')} {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -572,9 +574,9 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                     name="serialNumber"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Serial Number</FormLabel>
+                                            <FormLabel>{t('labels.serialNumber')}</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="e.g. 356354363DFGDF" {...field} />
+                                                <Input placeholder={t('placeholders.serialNumber')} {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -588,7 +590,7 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                 name="teamsInCharge"
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col">
-                                        <FormLabel>Teams in Charge</FormLabel>
+                                        <FormLabel>{t('labels.teamsInCharge')}</FormLabel>
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
@@ -602,14 +604,14 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                                     >
                                                         {(field.value || []).length > 0
                                                             ? `${(field.value || []).length} selected`
-                                                            : "Select teams/users"}
+                                                            : t('buttons.selectTeams')}
                                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                     </Button>
                                                 </FormControl>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-[200px] p-0">
                                                 <Command>
-                                                    <CommandInput placeholder="Search team..." />
+                                                    <CommandInput placeholder={t('placeholders.searchTeam')} />
                                                     <CommandList>
                                                         <CommandEmpty>No team found.</CommandEmpty>
                                                         <CommandGroup>
@@ -664,17 +666,17 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
 
                             {/* 12. QR Code */}
                             <div className="space-y-4">
-                                <FormLabel>QR Code/Barcode</FormLabel>
+                                <FormLabel>{t('labels.qrCode')}</FormLabel>
                                 {barcodeMode === "auto" ? (
                                     <div className="space-y-4">
-                                        <Input disabled value="Barcode will be generated" className="bg-muted/50 text-muted-foreground" />
+                                        <Input disabled value={t('messages.barcodeGenerated')} className="bg-muted/50 text-muted-foreground" />
                                         <div className="space-y-4">
                                             <button
                                                 type="button"
                                                 onClick={() => setBarcodeMode("manual")}
                                                 className="text-sm text-primary hover:underline font-medium"
                                             >
-                                                or Input Manually
+                                                {t('buttons.manualInput')}
                                             </button>
                                             <div className="w-32 h-32 border rounded-lg flex items-center justify-center bg-muted/10">
                                                 <QrCode className="w-20 h-20 text-muted-foreground/20" />
@@ -689,7 +691,7 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input placeholder="Enter barcode or tag ID" {...field} value={field.value || ""} />
+                                                        <Input placeholder={t('placeholders.barcode')} {...field} value={field.value || ""} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -700,7 +702,7 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                             onClick={() => setBarcodeMode("auto")}
                                             className="text-sm text-primary hover:underline font-medium"
                                         >
-                                            or Auto-Generate
+                                            {t('buttons.autoGenerate')}
                                         </button>
                                     </div>
                                 )}
@@ -713,9 +715,9 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                     name="assetType"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Asset Type</FormLabel>
+                                            <FormLabel>{t('labels.assetType')}</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="e.g. Machinery" {...field} />
+                                                <Input placeholder={t('placeholders.assetType')} {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -726,9 +728,9 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                     name="vendors"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Vendor</FormLabel>
+                                            <FormLabel>{t('labels.vendor')}</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="e.g. Vendor Name" {...field} />
+                                                <Input placeholder={t('placeholders.vendor')} {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -742,9 +744,9 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                 name="parts"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Parts</FormLabel>
+                                        <FormLabel>{t('labels.parts')}</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g. Filter, Belt" {...field} />
+                                            <Input placeholder={t('placeholders.parts')} {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -757,7 +759,7 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                 name="parentAssetId"
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col">
-                                        <FormLabel>Parent Asset</FormLabel>
+                                        <FormLabel>{t('labels.parentAsset')}</FormLabel>
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
@@ -771,14 +773,14 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                                     >
                                                         {field.value
                                                             ? findNodeName(assetTree, field.value) || field.value
-                                                            : "Select parent asset"}
+                                                            : t('placeholders.selectParent')}
                                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                     </Button>
                                                 </FormControl>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-[400px] p-0" align="start">
                                                 <Command>
-                                                    <CommandInput placeholder="Search assets..." />
+                                                    <CommandInput placeholder={t('placeholders.searchAssets')} />
                                                     <CommandList>
                                                         <CommandEmpty>No asset found.</CommandEmpty>
                                                         <CommandGroup>

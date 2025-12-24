@@ -1,0 +1,488 @@
+{
+    "Sidebar": {
+        "workOrders": "Work Orders",
+        "assets": "Assets",
+        "procedures": "Procedures",
+        "requests": "Requests",
+        "locations": "Locations",
+        "teams": "Teams",
+        "title": "OpsCMMS",
+        "version": "v1.0.0",
+        "user": "User",
+        "logout": "Log out",
+        "account": "Account",
+        "billing": "Billing",
+        "notifications": "Notifications",
+        "upgrade": "Upgrade to Pro"
+    },
+    "Login": {
+        "welcomeBack": "Welcome back",
+        "signInToContinue": "Sign in to your account to continue",
+        "secureSSO": "Secure Enterprise SSO Enabled",
+        "signInWithMicrosoft": "Sign in with Microsoft Entra ID",
+        "noAccount": "Don't have an account?",
+        "contactAdmin": "Contact your administrator",
+        "tagline": "Streamline your maintenance operations with intelligence.",
+        "quote": "This platform has completely transformed how we manage our assets and work orders. The efficiency gains are remarkable.",
+        "quoteAuthor": "Sofia Davis, Head of Maintenance"
+    },
+    "Common": {
+        "loading": "Loading...",
+        "save": "Save",
+        "cancel": "Cancel",
+        "error": "Error"
+    },
+    "WorkOrders": {
+        "title": "Work Orders",
+        "newWorkOrder": "New Work Order",
+        "searchPlaceholder": "Search Work Orders",
+        "assignedTo": "Assigned To",
+        "dueDate": "Due Date",
+        "location": "Location",
+        "priority": "Priority",
+        "addFilter": "Add Filter",
+        "todo": "To Do",
+        "done": "Done",
+        "noWorkOrders": "No work orders found.",
+        "noCompletedWorkOrders": "No completed work orders.",
+        "noSelection": "No Work Order Selected",
+        "selectToView": "Select a work order from the list to view details.",
+        "comments": "Comments",
+        "edit": "Edit",
+        "duplicate": "Duplicate",
+        "print": "Print",
+        "delete": "Delete",
+        "description": "Description",
+        "asset": "Asset",
+        "viewProcedure": "View Procedure",
+        "unassigned": "Unassigned",
+        "noDescription": "No description provided.",
+        "status": {
+            "open": "Open",
+            "onHold": "On Hold",
+            "inProgress": "In Progress",
+            "done": "Done"
+        },
+        "workOrderId": "Work Order ID",
+        "priorities": {
+            "High": "High",
+            "Medium": "Medium",
+            "Low": "Low"
+        }
+    },
+    "Assets": {
+        "title": "Assets",
+        "createAsset": "Create Asset",
+        "searchPlaceholder": "Search Assets",
+        "filter": {
+            "asset": "Asset",
+            "location": "Location",
+            "teams": "Teams",
+            "criticality": "Criticality",
+            "status": "Status",
+            "name": "Name",
+            "model": "Model",
+            "serialNumber": "Serial Number",
+            "manufacturer": "Manufacturer",
+            "vendor": "Vendor"
+        },
+        "addFilter": "Add Filter",
+        "clearFilters": "Clear Filters",
+        "sortBy": "Sort By",
+        "sortOptions": {
+            "latest": "Latest",
+            "oldest": "Oldest",
+            "nameAsc": "Name: Ascending",
+            "nameDesc": "Name: Descending"
+        },
+        "missingInfoBanner": "You have {count} Assets without a Manufacturer or Model",
+        "updateAssets": "Update Assets",
+        "noAssets": "No assets found",
+        "getStarted": "Get started by creating your first asset to track equipment, machinery, and more.",
+        "loadMore": "Load More",
+        "noSelection": "No Asset Selected",
+        "selectToView": "Select an asset from the list to view details.",
+        "subAssets": "{count} Sub-Assets",
+        "newSubAsset": "New Sub-Asset",
+        "status": {
+            "Online": "Online",
+            "Offline": "Offline",
+            "Do Not Track": "Do Not Track",
+            "online": "Online",
+            "offline": "Offline",
+            "doNotTrack": "Do Not Track"
+        },
+        "createSubAssetDesc": "Create a new sub-asset for {parentName}.",
+        "subAssetName": "Sub-Asset Name",
+        "enterSubAssetName": "Enter Sub-Asset Name",
+        "addMoreInfo": "Add More Info",
+        "create": "Create",
+        "creating": "Creating..."
+    },
+    "WorkOrderForm": {
+        "editTitle": "Edit Work Order",
+        "newTitle": "New Work Order",
+        "editDesc": "Edit existing work order details.",
+        "newDesc": "Create a new work order for maintenance or repairs.",
+        "labels": {
+            "name": "Work Order Name",
+            "description": "Description",
+            "procedure": "Procedure",
+            "location": "Location",
+            "criticality": "Criticality",
+            "assignTo": "Assign To",
+            "dueDate": "Due Date",
+            "schedule": "Schedule",
+            "priority": "Priority",
+            "asset": "Asset",
+            "files": "Files",
+            "parts": "Parts",
+            "categories": "Categories",
+            "vendors": "Vendors",
+            "every": "Every",
+            "weekOn": "week on"
+        },
+        "placeholders": {
+            "name": "e.g. Weekly Forklift Inspection",
+            "description": "Describe the issue or task...",
+            "selectLocation": "Select location",
+            "selectCriticality": "Select criticality",
+            "selectTeam": "Select team members",
+            "searchUser": "Search user...",
+            "pickDate": "Pick a date",
+            "selectAsset": "Select asset",
+            "categories": "e.g. Electrical, Mechanical",
+            "vendors": "e.g. Grainger"
+        },
+        "buttons": {
+            "addPicture": "Add or drag pictures",
+            "addProcedure": "Add Procedure",
+            "createOrAttach": "Create or attach new Form, Procedure or Checklist",
+            "attachFiles": "Attach files",
+            "addParts": "Add parts",
+            "save": "Save Changes",
+            "create": "Create Work Order",
+            "cancel": "Cancel"
+        },
+        "messages": {
+            "repeats": "Repeats every {interval} week on {days}",
+            "selected": "{count} selected"
+        }
+    },
+    "AssetForm": {
+        "editTitle": "Edit Asset",
+        "newTitle": "New Asset",
+        "editDesc": "Edit existing asset details.",
+        "newDesc": "Register a new asset in the system.",
+        "labels": {
+            "name": "Name",
+            "pictures": "Pictures",
+            "files": "Files",
+            "location": "Location",
+            "criticality": "Criticality",
+            "description": "Description",
+            "year": "Year",
+            "manufacturer": "Manufacturer",
+            "model": "Model",
+            "serialNumber": "Serial Number",
+            "teamsInCharge": "Teams in Charge",
+            "qrCode": "QR Code/Barcode",
+            "assetType": "Asset Type",
+            "vendor": "Vendor",
+            "parts": "Parts",
+            "parentAsset": "Parent Asset"
+        },
+        "placeholders": {
+            "name": "e.g. Forklift #9",
+            "year": "e.g. 2023",
+            "manufacturer": "e.g. Caterpillar",
+            "model": "e.g. GP15-35(C)N",
+            "serialNumber": "e.g. 356354363DFGDF",
+            "searchTeam": "Search team...",
+            "barcode": "Enter barcode or tag ID",
+            "assetType": "e.g. Machinery",
+            "vendor": "e.g. Vendor Name",
+            "parts": "e.g. Filter, Belt",
+            "selectParent": "Select parent asset",
+            "searchAssets": "Search assets...",
+            "selectLocation": "Select location",
+            "searchLocation": "Search location...",
+            "selectCriticality": "Select criticality",
+            "description": "Asset description..."
+        },
+        "buttons": {
+            "addPicture": "Add or drag pictures",
+            "uploading": "Uploading...",
+            "addFile": "Add or drag files",
+            "manualInput": "or Input Manually",
+            "autoGenerate": "or Auto-Generate",
+            "selectTeams": "Select teams/users",
+            "save": "Save Changes",
+            "create": "Create Asset",
+            "cancel": "Cancel"
+        },
+        "messages": {
+            "created": "Asset Created",
+            "updated": "Asset Updated",
+            "successCreate": "Successfully created asset {name}.",
+            "successUpdate": "Successfully updated asset {name}.",
+            "errorTitle": "Error",
+            "errorDesc": "Failed to save asset. Please try again.",
+            "barcodeGenerated": "Barcode will be generated"
+        }
+    },
+    "AssetDetail": {
+        "tabs": {
+            "details": "Details",
+            "history": "History"
+        },
+        "sections": {
+            "status": "Status",
+            "description": "Description",
+            "manufacturer": "Manufacturer",
+            "year": "Year",
+            "location": "Location",
+            "criticality": "Criticality",
+            "barcode": "Barcode",
+            "pictures": "Pictures",
+            "files": "Files",
+            "subAssets": "Sub-Assets"
+        },
+        "actions": {
+            "edit": "Edit",
+            "delete": "Delete Asset",
+            "print": "Print",
+            "useInWorkOrder": "Use in New Work Order",
+            "seeMore": "See More",
+            "add": "Add",
+            "createSubAsset": "Create Sub-Asset"
+        },
+        "prompt": {
+            "addManModel": "Add a Manufacturer and Model",
+            "addManModelDesc": "Help us recommend manuals, procedures, parts, and more for this Asset"
+        },
+        "history": {
+            "created": "Asset Created",
+            "updated": "Asset Updated",
+            "by": "by {user} on {date}",
+            "noHistory": "No History",
+            "noHistoryDesc": "No history events recorded for this asset yet."
+        },
+        "dialog": {
+            "deleteTitle": "Delete Asset",
+            "deleteDesc": "Are you sure you want to delete {name}? This action cannot be undone.",
+            "cancel": "Cancel",
+            "confirmDelete": "Delete"
+        }
+    },
+    "Locations": {
+        "title": "Locations",
+        "newLocation": "New Location",
+        "searchPlaceholder": "Search Locations",
+        "filters": {
+            "name": "Name",
+            "assets": "Assets",
+            "teams": "Teams",
+            "createdBy": "Created By",
+            "clear": "Clear Filters"
+        },
+        "sortBy": {
+            "label": "Sort By",
+            "latest": "Latest",
+            "oldest": "Oldest",
+            "nameAsc": "Name: Ascending",
+            "nameDesc": "Name: Descending"
+        },
+        "empty": {
+            "noLocations": "No locations found",
+            "description": "Try adjusting your filters or create a new location.",
+            "loading": "Loading locations...",
+            "loadingForm": "Loading...",
+            "noSelection": "No Location Selected",
+            "selectToView": "Select a location from the list to view details."
+        },
+        "detail": {
+            "edit": "Edit",
+            "delete": "Delete Location",
+            "tabs": {
+                "details": "Details",
+                "history": "History"
+            },
+            "sections": {
+                "description": "Description",
+                "address": "Address",
+                "teams": "Teams in Charge",
+                "vendor": "Vendor",
+                "barcode": "Barcode",
+                "subLocations": "Sub-Locations",
+                "assets": "Assets"
+            },
+            "noDescription": "No description provided.",
+            "unknownTeam": "UNKNOWN TEAM",
+            "scanToView": "Scan to view location details.",
+            "createSubLocation": "Create Sub-Location",
+            "deleteDialog": {
+                "title": "Delete Location",
+                "description": "Are you sure you want to delete {name}? This action cannot be undone.",
+                "cancel": "Cancel",
+                "confirm": "Delete"
+            }
+        }
+    },
+    "LocationForm": {
+        "editTitle": "Edit Location",
+        "newTitle": "New Location",
+        "editDesc": "Edit existing location details.",
+        "newDesc": "Add a new location or facility.",
+        "labels": {
+            "name": "Location Name",
+            "pictures": "Pictures",
+            "address": "Address",
+            "description": "Description",
+            "teams": "Teams in Charge",
+            "qrCode": "QR Code/Barcode",
+            "files": "Files",
+            "vendor": "Vendor",
+            "parent": "Parent Location"
+        },
+        "placeholders": {
+            "name": "e.g. Warehouse A",
+            "address": "123 Main St...",
+            "description": "Location details...",
+            "searchTeam": "Search team...",
+            "barcode": "Enter barcode or tag ID",
+            "vendor": "e.g. Vendor Name",
+            "selectParent": "Select parent location",
+            "search": "Search locations..."
+        },
+        "buttons": {
+            "addPictures": "Add Pictures",
+            "uploadFiles": "Click to upload files",
+            "manualInput": "or Input Manually",
+            "autoGenerate": "or Auto-Generate",
+            "selectTeams": "Select teams/users",
+            "cancel": "Cancel",
+            "save": "Save Changes",
+            "create": "Create Location",
+            "uploading": "Uploading..."
+        },
+        "messages": {
+            "created": "Location Created",
+            "updated": "Location Updated",
+            "success": "Successfully {action} location {name}.",
+            "error": "Error",
+            "fail": "Failed to save location. Please try again.",
+            "uploadSuccess": "Upload successful",
+            "uploadFail": "Upload failed"
+        }
+    },
+    "Teams": {
+        "pageTitle": "Teams / Users",
+        "tabs": {
+            "teams": "Teams",
+            "users": "Users"
+        },
+        "title": "Teams",
+        "createTeam": "Create Team",
+        "searchPlaceholder": "Search Teams",
+        "empty": {
+            "noTeams": "No teams found.",
+            "loading": "Loading teams...",
+            "noMembers": "No one else to add."
+        },
+        "table": {
+            "name": "Name",
+            "admin": "Administrator",
+            "members": "Members"
+        },
+        "actions": {
+            "edit": "Edit Team",
+            "delete": "Delete Team"
+        },
+        "form": {
+            "newTitle": "New Team",
+            "editTitle": "Edit Team",
+            "nameLabel": "Team Name (Required)",
+            "namePlaceholder": "Enter Team Name",
+            "descLabel": "Description",
+            "descPlaceholder": "What's this group about?",
+            "colorLabel": "Team Color",
+            "escalationLabel": "Set as Escalation Team",
+            "escalationDesc": "Should this Team be automatically notified about certain events?",
+            "criticalParts": "Critical Parts",
+            "save": "Save Changes",
+            "create": "Create Team",
+            "cancel": "Cancel"
+        },
+        "dialog": {
+            "addMembers": "Add Members to the Team",
+            "searchUser": "Start typing or paste email...",
+            "invite": "Invite \"{email}\"?",
+            "skip": "Skip",
+            "deleteTitle": "Delete Team",
+            "deleteDesc": "Are you sure you want to delete this team? This action cannot be undone.",
+            "deleteConfirm": "Delete"
+        },
+        "messages": {
+            "created": "Team Created",
+            "updated": "Team Updated",
+            "success": "{name} has been {action} successfully.",
+            "deleted": "Team Deleted",
+            "invited": "Member Invited",
+            "uploadFail": "Upload failed",
+            "error": "Error",
+            "loadFail": "Failed to load teams",
+            "uploadFailDesc": "Failed to upload image",
+            "opFail": "Operation failed",
+            "deleteFail": "Failed to delete team",
+            "deleteSuccess": "The team has been removed."
+        },
+        "detail": {
+            "title": "Team Details",
+            "membersTitle": "Member ({count})",
+            "memberTable": {
+                "name": "Full Name",
+                "role": "Role",
+                "lastVisit": "Last Visit"
+            },
+            "roles": {
+                "admin": "Team Administrator",
+                "member": "Member"
+            },
+            "removeMember": "Remove from Team",
+            "onePersonTeam": "One person Team",
+            "peopleTeam": "{count} people Team",
+            "inviteDesc": "Invite people to join the Team and organize your workflows.",
+            "addMembers": "Add Members",
+            "locationsTitle": "Locations ({count})",
+            "assetsTitle": "Assets ({count})",
+            "noLocations": "Which locations is the Team responsible for?",
+            "noAssets": "Which assets is the Team responsible for?",
+            "assignLocations": "Assign locations to the Team",
+            "assignAssets": "Assign assets to the Team",
+            "imagePreview": "Team Image Preview"
+        },
+        "invite": {
+            "title": "Invite Users",
+            "columns": {
+                "name": "Full Name",
+                "contact": "Mobile Phone Number or Email",
+                "type": "Account Type"
+            },
+            "types": {
+                "full": "Full User",
+                "limited": "Limited User",
+                "admin": "Administrator"
+            },
+            "addAnother": "Add another",
+            "send": "Send Invites",
+            "getLink": "Get an invite link to share",
+            "toast": {
+                "sentTitle": "Invites Sent",
+                "sentDesc": "Successfully sent {count} invite(s).",
+                "linkTitle": "Link Copied",
+                "linkDesc": "Invite link copied to clipboard."
+            }
+        }
+    }
+}

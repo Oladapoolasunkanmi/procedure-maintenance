@@ -1,0 +1,488 @@
+{
+    "Sidebar": {
+        "workOrders": "Arbeitsaufträge",
+        "assets": "Anlagen",
+        "procedures": "Verfahren",
+        "requests": "Anfragen",
+        "locations": "Standorte",
+        "teams": "Teams",
+        "title": "OpsCMMS",
+        "version": "v1.0.0",
+        "user": "Benutzer",
+        "logout": "Abmelden",
+        "account": "Konto",
+        "billing": "Abrechnung",
+        "notifications": "Benachrichtigungen",
+        "upgrade": "Upgrade auf Pro"
+    },
+    "Login": {
+        "welcomeBack": "Willkommen zurück",
+        "signInToContinue": "Melden Sie sich an, um fortzufahren",
+        "secureSSO": "Sicheres Enterprise-SSO aktiviert",
+        "signInWithMicrosoft": "Mit Microsoft Entra ID anmelden",
+        "noAccount": "Kein Konto?",
+        "contactAdmin": "Kontaktieren Sie Ihren Administrator",
+        "tagline": "Optimieren Sie Ihre Wartungsprozesse mit Intelligenz.",
+        "quote": "Diese Plattform hat die Verwaltung unserer Anlagen und Arbeitsaufträge komplett verändert. Die Effizienzgewinne sind bemerkenswert.",
+        "quoteAuthor": "Sofia Davis, Abteilungsleiterin Wartung"
+    },
+    "Common": {
+        "loading": "Lädt...",
+        "save": "Speichern",
+        "cancel": "Abbrechen",
+        "error": "Fehler"
+    },
+    "WorkOrders": {
+        "title": "Arbeitsaufträge",
+        "newWorkOrder": "Neuer Auftrag",
+        "searchPlaceholder": "Suche Arbeitsaufträge",
+        "assignedTo": "Zugewiesen an",
+        "dueDate": "Fälligkeitsdatum",
+        "location": "Standort",
+        "priority": "Priorität",
+        "addFilter": "Filter hinzufügen",
+        "todo": "Zu erledigen",
+        "done": "Erledigt",
+        "noWorkOrders": "Keine Arbeitsaufträge gefunden.",
+        "noCompletedWorkOrders": "Keine erledigten Arbeitsaufträge.",
+        "noSelection": "Kein Auftrag ausgewählt",
+        "selectToView": "Wählen Sie einen Auftrag aus der Liste, um Details anzuzeigen.",
+        "comments": "Kommentare",
+        "edit": "Bearbeiten",
+        "duplicate": "Duplizieren",
+        "print": "Drucken",
+        "delete": "Löschen",
+        "description": "Beschreibung",
+        "asset": "Anlage",
+        "viewProcedure": "Verfahren anzeigen",
+        "unassigned": "Nicht zugewiesen",
+        "noDescription": "Keine Beschreibung vorhanden.",
+        "status": {
+            "open": "Offen",
+            "onHold": "Pausiert",
+            "inProgress": "In Arbeit",
+            "done": "Erledigt"
+        },
+        "workOrderId": "Arbeitsauftrags-ID",
+        "priorities": {
+            "High": "Hoch",
+            "Medium": "Mittel",
+            "Low": "Niedrig"
+        }
+    },
+    "Assets": {
+        "title": "Anlagen",
+        "createAsset": "Anlage erstellen",
+        "searchPlaceholder": "Suche Anlagen",
+        "filter": {
+            "asset": "Anlage",
+            "location": "Standort",
+            "teams": "Teams",
+            "criticality": "Kritikalität",
+            "status": "Status",
+            "name": "Name",
+            "model": "Modell",
+            "serialNumber": "Seriennummer",
+            "manufacturer": "Hersteller",
+            "vendor": "Anbieter"
+        },
+        "addFilter": "Filter hinzufügen",
+        "clearFilters": "Filter löschen",
+        "sortBy": "Sortieren nach",
+        "sortOptions": {
+            "latest": "Neueste",
+            "oldest": "Älteste",
+            "nameAsc": "Name: Aufsteigend",
+            "nameDesc": "Name: Absteigend"
+        },
+        "missingInfoBanner": "Sie haben {count} Anlagen ohne Hersteller oder Modell",
+        "updateAssets": "Anlagen aktualisieren",
+        "noAssets": "Keine Anlagen gefunden",
+        "getStarted": "Beginnen Sie damit, Ihre erste Anlage zu erstellen, um Geräte, Maschinen und mehr zu verfolgen.",
+        "loadMore": "Mehr laden",
+        "noSelection": "Keine Anlage ausgewählt",
+        "selectToView": "Wählen Sie eine Anlage aus der Liste, um Details anzuzeigen.",
+        "subAssets": "{count} Unteranlagen",
+        "newSubAsset": "Neue Unteranlage",
+        "createSubAssetDesc": "Erstellen Sie eine neue Unteranlage für {parentName}.",
+        "subAssetName": "Name der Unteranlage",
+        "enterSubAssetName": "Name eingeben",
+        "addMoreInfo": "Mehr Infos hinzufügen",
+        "create": "Erstellen",
+        "creating": "Erstellen...",
+        "status": {
+            "online": "Online",
+            "offline": "Offline",
+            "Online": "Online",
+            "Offline": "Offline",
+            "Do Not Track": "Nicht verfolgen",
+            "doNotTrack": "Nicht verfolgen"
+        }
+    },
+    "WorkOrderForm": {
+        "editTitle": "Arbeitsauftrag bearbeiten",
+        "newTitle": "Neuer Arbeitsauftrag",
+        "editDesc": "Bearbeiten Sie die Details des bestehenden Arbeitsauftrags.",
+        "newDesc": "Erstellen Sie einen neuen Arbeitsauftrag für Wartung oder Reparaturen.",
+        "labels": {
+            "name": "Auftragsname",
+            "description": "Beschreibung",
+            "procedure": "Verfahren",
+            "location": "Standort",
+            "criticality": "Kritikalität",
+            "assignTo": "Zuweisen an",
+            "dueDate": "Fälligkeitsdatum",
+            "schedule": "Zeitplan",
+            "priority": "Priorität",
+            "asset": "Anlage",
+            "files": "Dateien",
+            "parts": "Teile",
+            "categories": "Kategorien",
+            "vendors": "Anbieter",
+            "every": "Alle",
+            "weekOn": "Woche am"
+        },
+        "placeholders": {
+            "name": "z.B. Wöchentliche Staplerinspektion",
+            "description": "Beschreiben Sie das Problem oder die Aufgabe...",
+            "selectLocation": "Standort wählen",
+            "selectCriticality": "Kritikalität wählen",
+            "selectTeam": "Teammitglieder wählen",
+            "searchUser": "Benutzer suchen...",
+            "pickDate": "Datum wählen",
+            "selectAsset": "Anlage wählen",
+            "categories": "z.B. Elektrik, Mechanik",
+            "vendors": "z.B. Grainger"
+        },
+        "buttons": {
+            "addPicture": "Bilder hinzufügen",
+            "addProcedure": "Verfahren hinzufügen",
+            "createOrAttach": "Neues Formular, Verfahren oder Checkliste erstellen oder anhängen",
+            "attachFiles": "Dateien anhängen",
+            "addParts": "Teile hinzufügen",
+            "save": "Änderungen speichern",
+            "create": "Auftrag erstellen",
+            "cancel": "Abbrechen"
+        },
+        "messages": {
+            "repeats": "Wiederholt alle {interval} Woche(n) am {days}",
+            "selected": "{count} ausgewählt"
+        }
+    },
+    "AssetForm": {
+        "editTitle": "Anlage bearbeiten",
+        "newTitle": "Neue Anlage",
+        "editDesc": "Bearbeiten Sie die Details der bestehenden Anlage.",
+        "newDesc": "Registrieren Sie eine neue Anlage im System.",
+        "labels": {
+            "name": "Name",
+            "pictures": "Bilder",
+            "files": "Dateien",
+            "location": "Standort",
+            "criticality": "Kritikalität",
+            "description": "Beschreibung",
+            "year": "Jahr",
+            "manufacturer": "Hersteller",
+            "model": "Modell",
+            "serialNumber": "Seriennummer",
+            "teamsInCharge": "Verantwortliche Teams",
+            "qrCode": "QR Code/Barcode",
+            "assetType": "Anlagentyp",
+            "vendor": "Anbieter",
+            "parts": "Teile",
+            "parentAsset": "Übergeordnete Anlage"
+        },
+        "placeholders": {
+            "name": "z.B. Gabelstapler #9",
+            "year": "z.B. 2023",
+            "manufacturer": "z.B. Caterpillar",
+            "model": "z.B. GP15-35(C)N",
+            "serialNumber": "z.B. 356354363DFGDF",
+            "searchTeam": "Team suchen...",
+            "barcode": "Barcode oder Tag-ID eingeben",
+            "assetType": "z.B. Maschinen",
+            "vendor": "z.B. Anbietername",
+            "parts": "z.B. Filter, Riemen",
+            "selectParent": "Übergeordnete Anlage wählen",
+            "searchAssets": "Anlagen suchen...",
+            "selectLocation": "Standort wählen",
+            "searchLocation": "Standort suchen...",
+            "selectCriticality": "Kritikalität wählen",
+            "description": "Anlagenbeschreibung..."
+        },
+        "buttons": {
+            "addPicture": "Bilder hinzufügen",
+            "uploading": "Wird hochgeladen...",
+            "addFile": "Dateien hinzufügen",
+            "manualInput": "oder manuell eingeben",
+            "autoGenerate": "oder automatisch generieren",
+            "selectTeams": "Teams/Benutzer wählen",
+            "save": "Änderungen speichern",
+            "create": "Anlage erstellen",
+            "cancel": "Abbrechen"
+        },
+        "messages": {
+            "created": "Anlage erstellt",
+            "updated": "Anlage aktualisiert",
+            "successCreate": "Anlage {name} erfolgreich erstellt.",
+            "successUpdate": "Anlage {name} erfolgreich aktualisiert.",
+            "errorTitle": "Fehler",
+            "errorDesc": "Fehler beim Speichern der Anlage. Bitte versuchen Sie es erneut.",
+            "barcodeGenerated": "Barcode wird generiert"
+        }
+    },
+    "AssetDetail": {
+        "tabs": {
+            "details": "Details",
+            "history": "Verlauf"
+        },
+        "sections": {
+            "status": "Status",
+            "description": "Beschreibung",
+            "manufacturer": "Hersteller",
+            "year": "Jahr",
+            "location": "Standort",
+            "criticality": "Kritikalität",
+            "barcode": "Barcode",
+            "pictures": "Bilder",
+            "files": "Dateien",
+            "subAssets": "Unteranlagen"
+        },
+        "actions": {
+            "edit": "Bearbeiten",
+            "delete": "Anlage löschen",
+            "print": "Drucken",
+            "useInWorkOrder": "In neuem Auftrag verwenden",
+            "seeMore": "Mehr anzeigen",
+            "add": "Hinzufügen",
+            "createSubAsset": "Unteranlage erstellen"
+        },
+        "prompt": {
+            "addManModel": "Hersteller und Modell hinzufügen",
+            "addManModelDesc": "Helfen Sie uns, Handbücher, Verfahren, Teile und mehr für diese Anlage zu empfehlen"
+        },
+        "history": {
+            "created": "Anlage erstellt",
+            "updated": "Anlage aktualisiert",
+            "by": "von {user} am {date}",
+            "noHistory": "Kein Verlauf",
+            "noHistoryDesc": "Noch keine Verlaufsereignisse für diese Anlage aufgezeichnet."
+        },
+        "dialog": {
+            "deleteTitle": "Anlage löschen",
+            "deleteDesc": "Sind Sie sicher, dass Sie {name} löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+            "cancel": "Abbrechen",
+            "confirmDelete": "Löschen"
+        }
+    },
+    "Locations": {
+        "title": "Standorte",
+        "newLocation": "Neuer Standort",
+        "searchPlaceholder": "Standorte suchen",
+        "filters": {
+            "name": "Name",
+            "assets": "Anlagen",
+            "teams": "Teams",
+            "createdBy": "Erstellt von",
+            "clear": "Filter löschen"
+        },
+        "sortBy": {
+            "label": "Sortieren nach",
+            "latest": "Neueste",
+            "oldest": "Älteste",
+            "nameAsc": "Name: Aufsteigend",
+            "nameDesc": "Name: Absteigend"
+        },
+        "empty": {
+            "noLocations": "Keine Standorte gefunden",
+            "description": "Versuchen Sie, Ihre Filter anzupassen oder erstellen Sie einen neuen Standort.",
+            "loading": "Standorte werden geladen...",
+            "loadingForm": "Wird geladen...",
+            "noSelection": "Kein Standort ausgewählt",
+            "selectToView": "Wählen Sie einen Standort aus der Liste, um Details anzuzeigen."
+        },
+        "detail": {
+            "edit": "Bearbeiten",
+            "delete": "Standort löschen",
+            "tabs": {
+                "details": "Details",
+                "history": "Verlauf"
+            },
+            "sections": {
+                "description": "Beschreibung",
+                "address": "Adresse",
+                "teams": "Verantwortliche Teams",
+                "vendor": "Anbieter",
+                "barcode": "Barcode",
+                "subLocations": "Unterstandorte",
+                "assets": "Anlagen"
+            },
+            "noDescription": "Keine Beschreibung vorhanden.",
+            "unknownTeam": "UNBEKANNTES TEAM",
+            "scanToView": "Scannen, um Standortdetails anzuzeigen.",
+            "createSubLocation": "Unterstandort erstellen",
+            "deleteDialog": {
+                "title": "Standort löschen",
+                "description": "Sind Sie sicher, dass Sie {name} löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+                "cancel": "Abbrechen",
+                "confirm": "Löschen"
+            }
+        }
+    },
+    "LocationForm": {
+        "editTitle": "Standort bearbeiten",
+        "newTitle": "Neuer Standort",
+        "editDesc": "Bearbeiten Sie die Details des bestehenden Standorts.",
+        "newDesc": "Fügen Sie einen neuen Standort oder eine neue Einrichtung hinzu.",
+        "labels": {
+            "name": "Standortname",
+            "pictures": "Bilder",
+            "address": "Adresse",
+            "description": "Beschreibung",
+            "teams": "Verantwortliche Teams",
+            "qrCode": "QR-Code/Barcode",
+            "files": "Dateien",
+            "vendor": "Anbieter",
+            "parent": "Übergeordneter Standort"
+        },
+        "placeholders": {
+            "name": "z.B. Lager A",
+            "address": "Musterstraße 123...",
+            "description": "Standortdetails...",
+            "searchTeam": "Team suchen...",
+            "barcode": "Barcode oder Tag-ID eingeben",
+            "vendor": "z.B. Anbietername",
+            "selectParent": "Übergeordneten Standort wählen",
+            "search": "Standorte suchen..."
+        },
+        "buttons": {
+            "addPictures": "Bilder hinzufügen",
+            "uploadFiles": "Klicken zum Hochladen von Dateien",
+            "manualInput": "oder manuell eingeben",
+            "autoGenerate": "oder automatisch generieren",
+            "selectTeams": "Teams/Benutzer wählen",
+            "cancel": "Abbrechen",
+            "save": "Änderungen speichern",
+            "create": "Standort erstellen",
+            "uploading": "Wird hochgeladen..."
+        },
+        "messages": {
+            "created": "Standort erstellt",
+            "updated": "Standort aktualisiert",
+            "success": "Standort {name} erfolgreich {action}.",
+            "error": "Fehler",
+            "fail": "Fehler beim Speichern des Standorts. Bitte versuchen Sie es erneut.",
+            "uploadSuccess": "Upload erfolgreich",
+            "uploadFail": "Upload fehlgeschlagen"
+        }
+    },
+    "Teams": {
+        "pageTitle": "Teams / Benutzer",
+        "tabs": {
+            "teams": "Teams",
+            "users": "Benutzer"
+        },
+        "title": "Teams",
+        "createTeam": "Team erstellen",
+        "searchPlaceholder": "Teams suchen",
+        "empty": {
+            "noTeams": "Keine Teams gefunden.",
+            "loading": "Teams werden geladen...",
+            "noMembers": "Niemand sonst hinzuzufügen."
+        },
+        "table": {
+            "name": "Name",
+            "admin": "Administrator",
+            "members": "Mitglieder"
+        },
+        "actions": {
+            "edit": "Team bearbeiten",
+            "delete": "Team löschen"
+        },
+        "form": {
+            "newTitle": "Neues Team",
+            "editTitle": "Team bearbeiten",
+            "nameLabel": "Teamname (Erforderlich)",
+            "namePlaceholder": "Teamname eingeben",
+            "descLabel": "Beschreibung",
+            "descPlaceholder": "Worum geht es in dieser Gruppe?",
+            "colorLabel": "Teamfarbe",
+            "escalationLabel": "Als Eskalationsteam festlegen",
+            "escalationDesc": "Soll dieses Team automatisch über bestimmte Ereignisse benachrichtigt werden?",
+            "criticalParts": "Kritische Teile",
+            "save": "Änderungen speichern",
+            "create": "Team erstellen",
+            "cancel": "Abbrechen"
+        },
+        "dialog": {
+            "addMembers": "Mitglieder zum Team hinzufügen",
+            "searchUser": "Tippen beginnen oder E-Mail einfügen...",
+            "invite": "\"{email}\" einladen?",
+            "skip": "Überspringen",
+            "deleteTitle": "Team löschen",
+            "deleteDesc": "Sind Sie sicher, dass Sie dieses Team löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+            "deleteConfirm": "Löschen"
+        },
+        "messages": {
+            "created": "Team erstellt",
+            "updated": "Team aktualisiert",
+            "success": "{name} wurde erfolgreich {action}.",
+            "deleted": "Team gelöscht",
+            "invited": "Mitglied eingeladen",
+            "uploadFail": "Hochladen fehlgeschlagen",
+            "error": "Fehler",
+            "loadFail": "Teams konnten nicht geladen werden",
+            "uploadFailDesc": "Bild-Upload fehlgeschlagen",
+            "opFail": "Vorgang fehlgeschlagen",
+            "deleteFail": "Team konnte nicht gelöscht werden",
+            "deleteSuccess": "Das Team wurde entfernt."
+        },
+        "detail": {
+            "title": "Team-Details",
+            "membersTitle": "Mitglieder ({count})",
+            "memberTable": {
+                "name": "Vollständiger Name",
+                "role": "Rolle",
+                "lastVisit": "Letzter Besuch"
+            },
+            "roles": {
+                "admin": "Team-Administrator",
+                "member": "Mitglied"
+            },
+            "removeMember": "Aus dem Team entfernen",
+            "onePersonTeam": "Ein-Personen-Team",
+            "peopleTeam": "{count}-Personen-Team",
+            "inviteDesc": "Laden Sie Leute ein, dem Team beizutreten und organisieren Sie Ihre Arbeitsabläufe.",
+            "addMembers": "Mitglieder hinzufügen",
+            "locationsTitle": "Standorte ({count})",
+            "assetsTitle": "Anlagen ({count})",
+            "noLocations": "Für welche Standorte ist das Team verantwortlich?",
+            "noAssets": "Für welche Anlagen ist das Team verantwortlich?",
+            "assignLocations": "Standorte dem Team zuweisen",
+            "assignAssets": "Anlagen dem Team zuweisen",
+            "imagePreview": "Team-Bildvorschau"
+        },
+        "invite": {
+            "title": "Benutzer einladen",
+            "columns": {
+                "name": "Vollständiger Name",
+                "contact": "Handynummer oder E-Mail",
+                "type": "Kontotyp"
+            },
+            "types": {
+                "full": "Vollbenutzer",
+                "limited": "Eingeschränkter Benutzer",
+                "admin": "Administrator"
+            },
+            "addAnother": "Einen weiteren hinzufügen",
+            "send": "Einladungen senden",
+            "getLink": "Link zum Teilen erhalten",
+            "toast": {
+                "sentTitle": "Einladungen gesendet",
+                "sentDesc": "{count} Einladung(en) erfolgreich gesendet.",
+                "linkTitle": "Link kopiert",
+                "linkDesc": "Einladungslink in die Zwischenablage kopiert."
+            }
+        }
+    }
+}

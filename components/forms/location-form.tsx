@@ -48,6 +48,7 @@ import {
 
 import { users } from "@/lib/data"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useTranslations } from "next-intl"
 
 const formSchema = z.object({
     name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -75,6 +76,7 @@ interface LocationTreeNode {
 
 export function LocationForm({ initialData, isEditing = false, locationId }: LocationFormProps) {
     const router = useRouter()
+    const t = useTranslations('LocationForm')
     const { toast } = useToast()
     const searchParams = useSearchParams()
     const [barcodeMode, setBarcodeMode] = useState<"auto" | "manual">("auto")
@@ -138,14 +140,14 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
             form.setValue(fieldName, [...currentValues, ...newUrls])
 
             toast({
-                title: "Upload successful",
+                title: t('messages.uploadSuccess'),
                 description: `${files.length} ${type}(s) uploaded.`,
             })
 
         } catch (error) {
             console.error(error)
             toast({
-                title: "Upload failed",
+                title: t('messages.uploadFail'),
                 description: "Failed to upload files",
                 variant: "destructive"
             })
@@ -246,8 +248,8 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
             const savedId = isEditing ? locationId : (data.id || data._id || data.insertedId || data.item_id)
 
             toast({
-                title: isEditing ? "Location Updated" : "Location Created",
-                description: `Successfully ${isEditing ? "updated" : "created"} location ${values.name}.`,
+                title: isEditing ? t('messages.updated') : t('messages.created'),
+                description: t('messages.success', { action: isEditing ? "updated" : "created", name: values.name }),
             })
 
             if (savedId) {
@@ -259,8 +261,8 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
         } catch (error) {
             console.error("Failed to save location:", error)
             toast({
-                title: "Error",
-                description: "Failed to save location. Please try again.",
+                title: t('messages.error'),
+                description: t('messages.fail'),
                 variant: "destructive",
             })
         }
@@ -269,8 +271,8 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
     return (
         <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto w-full pb-24">
             <div className="text-left">
-                <h1 className="text-2xl font-bold tracking-tight">{isEditing ? "Edit Location" : "New Location"}</h1>
-                <p className="text-muted-foreground">{isEditing ? "Edit existing location details." : "Add a new location or facility."}</p>
+                <h1 className="text-2xl font-bold tracking-tight">{isEditing ? t('editTitle') : t('newTitle')}</h1>
+                <p className="text-muted-foreground">{isEditing ? t('editDesc') : t('newDesc')}</p>
             </div>
 
             <Card className="bg-card border rounded-lg shadow-none w-full">
@@ -284,9 +286,9 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                 name="name"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Location Name</FormLabel>
+                                        <FormLabel>{t('labels.name')}</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g. Warehouse A" {...field} />
+                                            <Input placeholder={t('placeholders.name')} {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -299,7 +301,7 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                 name="images"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Pictures</FormLabel>
+                                        <FormLabel>{t('labels.pictures')}</FormLabel>
                                         <FormControl>
                                             <div className="space-y-4">
                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -329,7 +331,7 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                                         ) : (
                                                             <>
                                                                 <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                                                                <span className="text-xs text-muted-foreground font-medium">Add Pictures</span>
+                                                                <span className="text-xs text-muted-foreground font-medium">{t('buttons.addPictures')}</span>
                                                             </>
                                                         )}
                                                         <input
@@ -355,9 +357,9 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                 name="address"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Address</FormLabel>
+                                        <FormLabel>{t('labels.address')}</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="123 Main St..." {...field} />
+                                            <Input placeholder={t('placeholders.address')} {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -370,9 +372,9 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                 name="description"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Description</FormLabel>
+                                        <FormLabel>{t('labels.description')}</FormLabel>
                                         <FormControl>
-                                            <Textarea placeholder="Location details..." className="resize-none" {...field} />
+                                            <Textarea placeholder={t('placeholders.description')} className="resize-none" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -385,7 +387,7 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                 name="teamsInCharge"
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col">
-                                        <FormLabel>Teams in Charge</FormLabel>
+                                        <FormLabel>{t('labels.teams')}</FormLabel>
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
@@ -398,15 +400,15 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                                         )}
                                                     >
                                                         {(field.value || []).length > 0
-                                                            ? `${(field.value || []).length} selected`
-                                                            : "Select teams/users"}
+                                                            ? t('messages.selected', { count: (field.value || []).length })
+                                                            : t('buttons.selectTeams')}
                                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                     </Button>
                                                 </FormControl>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-[200px] p-0">
                                                 <Command>
-                                                    <CommandInput placeholder="Search team..." />
+                                                    <CommandInput placeholder={t('placeholders.searchTeam')} />
                                                     <CommandList>
                                                         <CommandEmpty>No team found.</CommandEmpty>
                                                         <CommandGroup>
@@ -461,17 +463,17 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
 
                             {/* 6. Bar Code */}
                             <div className="space-y-4">
-                                <FormLabel>QR Code/Barcode</FormLabel>
+                                <FormLabel>{t('labels.qrCode')}</FormLabel>
                                 {barcodeMode === "auto" ? (
                                     <div className="space-y-4">
-                                        <Input disabled value="Barcode will be generated" className="bg-muted/50 text-muted-foreground" />
+                                        <Input disabled value={t('messages.barcodeGenerated')} className="bg-muted/50 text-muted-foreground" />
                                         <div className="space-y-4">
                                             <button
                                                 type="button"
                                                 onClick={() => setBarcodeMode("manual")}
                                                 className="text-sm text-primary hover:underline font-medium"
                                             >
-                                                or Input Manually
+                                                {t('buttons.manualInput')}
                                             </button>
                                             <div className="w-32 h-32 border rounded-lg flex items-center justify-center bg-muted/10">
                                                 <QrCode className="w-20 h-20 text-muted-foreground/20" />
@@ -486,7 +488,7 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input placeholder="Enter barcode or tag ID" {...field} value={field.value || ""} />
+                                                        <Input placeholder={t('placeholders.barcode')} {...field} value={field.value || ""} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -497,7 +499,7 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                             onClick={() => setBarcodeMode("auto")}
                                             className="text-sm text-primary hover:underline font-medium"
                                         >
-                                            or Auto-Generate
+                                            {t('buttons.autoGenerate')}
                                         </button>
                                     </div>
                                 )}
@@ -509,7 +511,7 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                 name="files"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Files</FormLabel>
+                                        <FormLabel>{t('labels.files')}</FormLabel>
                                         <FormControl>
                                             <div className="space-y-3">
                                                 <div className="flex flex-wrap gap-2">
@@ -539,12 +541,12 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                                     {isUploadingFile ? (
                                                         <div className="flex flex-col items-center">
                                                             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mb-2" />
-                                                            <span className="text-sm text-muted-foreground">Uploading...</span>
+                                                            <span className="text-sm text-muted-foreground">{t('buttons.uploading')}</span>
                                                         </div>
                                                     ) : (
                                                         <div className="flex flex-col items-center gap-1 text-muted-foreground">
                                                             <FileText className="h-6 w-6" />
-                                                            <span className="text-sm font-medium">Click to upload files</span>
+                                                            <span className="text-sm font-medium">{t('buttons.uploadFiles')}</span>
                                                         </div>
                                                     )}
                                                     <input
@@ -568,9 +570,9 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                 name="vendors"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Vendor</FormLabel>
+                                        <FormLabel>{t('labels.vendor')}</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g. Vendor Name" {...field} />
+                                            <Input placeholder={t('placeholders.vendor')} {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -583,7 +585,7 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                 name="parentLocationId"
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col">
-                                        <FormLabel>Parent Location</FormLabel>
+                                        <FormLabel>{t('labels.parent')}</FormLabel>
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
@@ -597,14 +599,14 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                                     >
                                                         {field.value
                                                             ? findLocationName(locationTree, field.value) || field.value
-                                                            : "Select parent location"}
+                                                            : t('placeholders.selectParent')}
                                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                     </Button>
                                                 </FormControl>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-[400px] p-0" align="start">
                                                 <Command>
-                                                    <CommandInput placeholder="Search locations..." />
+                                                    <CommandInput placeholder={t('placeholders.search')} />
                                                     <CommandList>
                                                         <CommandEmpty>No location found.</CommandEmpty>
                                                         <CommandGroup>
@@ -633,11 +635,11 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
 
             <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-end gap-4 border-t bg-card p-4 shadow-md sm:px-6">
                 <Button type="button" variant="outline" onClick={() => router.back()}>
-                    Cancel
+                    {t('buttons.cancel')}
                 </Button>
                 <Button type="submit" form="location-form" disabled={form.formState.isSubmitting} className="cursor-pointer">
                     {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isEditing ? "Save Changes" : "Create Location"}
+                    {isEditing ? t('buttons.save') : t('buttons.create')}
                 </Button>
             </div>
         </div>

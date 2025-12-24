@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
+import { Link } from "@/i18n/navigation"
 import {
     Archive,
     BarChart3,
@@ -53,45 +53,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ModeToggle } from "@/components/mode-toggle"
 
 // Menu items.
-const navMain = [
-    {
-        title: "Work Orders",
-        url: "/work-orders",
-        icon: ClipboardList,
-        isActive: true,
-    },
-    {
-        title: "Assets",
-        url: "/assets",
-        icon: Box,
-    },
-    {
-        title: "Procedures",
-        url: "/procedures",
-        icon: FileText,
-    },
-    {
-        title: "Requests",
-        url: "/requests",
-        icon: FileText,
-    },
-    {
-        title: "Locations",
-        url: "/locations",
-        icon: MapPin,
-    },
-    {
-        title: "Teams",
-        url: "/teams",
-        icon: Users,
-    },
-]
-
-const navSecondary: {
-    title: string
-    url: string
-    icon: React.ElementType
-}[] = []
+// Removed static arrays and interface to integrate inside component
+import { useTranslations } from "next-intl"
+import { LanguageSwitcher } from "./language-switcher"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
     user?: {
@@ -102,6 +66,48 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 }
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
+    const t = useTranslations('Sidebar')
+
+    const navMain = [
+        {
+            title: t('workOrders'),
+            url: "/work-orders",
+            icon: ClipboardList,
+            isActive: true,
+        },
+        {
+            title: t('assets'),
+            url: "/assets",
+            icon: Box,
+        },
+        {
+            title: t('procedures'),
+            url: "/procedures",
+            icon: FileText,
+        },
+        {
+            title: t('requests'),
+            url: "/requests",
+            icon: FileText,
+        },
+        {
+            title: t('locations'),
+            url: "/locations",
+            icon: MapPin,
+        },
+        {
+            title: t('teams'),
+            url: "/teams",
+            icon: Users,
+        },
+    ]
+
+    const navSecondary: {
+        title: string
+        url: string
+        icon: React.ElementType
+    }[] = []
+
     return (
         <Sidebar collapsible="icon" {...props}>
 
@@ -114,8 +120,8 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                                     <Wrench className="size-4" />
                                 </div>
                                 <div className="flex flex-col gap-0.5 leading-none">
-                                    <span className="font-semibold">OpsCMMS</span>
-                                    <span className="">v1.0.0</span>
+                                    <span className="font-semibold">{t('title')}</span>
+                                    <span className="">{t('version')}</span>
                                 </div>
                             </Link>
                         </SidebarMenuButton>
@@ -150,7 +156,8 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                 </SidebarMenu>
             </SidebarContent>
             <SidebarFooter>
-                <div className="p-2 flex justify-end">
+                <div className="p-2 flex justify-end gap-2">
+                    <LanguageSwitcher />
                     <ModeToggle />
                 </div>
                 <SidebarMenuItem>
@@ -165,7 +172,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                                     <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                                 </Avatar>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
-                                    <span className="truncate font-semibold">{user?.name || "User"}</span>
+                                    <span className="truncate font-semibold">{user?.name || t('user')}</span>
                                     <span className="truncate text-xs">{user?.email || "user@example.com"}</span>
                                 </div>
                                 <ChevronsUpDown className="ml-auto size-4" />
@@ -184,7 +191,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                                         <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                                     </Avatar>
                                     <div className="grid flex-1 text-left text-sm leading-tight">
-                                        <span className="truncate font-semibold">{user?.name || "User"}</span>
+                                        <span className="truncate font-semibold">{user?.name || t('user')}</span>
                                         <span className="truncate text-xs">{user?.email || "user@example.com"}</span>
                                     </div>
                                 </div>
@@ -193,29 +200,29 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                             <DropdownMenuGroup>
                                 <DropdownMenuItem>
                                     <Sparkles className="mr-2 size-4" />
-                                    Upgrade to Pro
+                                    {t('upgrade')}
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
                             <DropdownMenuSeparator />
                             <DropdownMenuGroup>
                                 <DropdownMenuItem>
                                     <BadgeCheck className="mr-2 size-4" />
-                                    Account
+                                    {t('account')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem>
                                     <CreditCard className="mr-2 size-4" />
-                                    Billing
+                                    {t('billing')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem>
                                     <Bell className="mr-2 size-4" />
-                                    Notifications
+                                    {t('notifications')}
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
                             <DropdownMenuSeparator />
                             <a href="/api/auth/logout">
                                 <DropdownMenuItem>
                                     <LogOut className="mr-2 size-4" />
-                                    Log out
+                                    {t('logout')}
                                 </DropdownMenuItem>
                             </a>
                         </DropdownMenuContent>

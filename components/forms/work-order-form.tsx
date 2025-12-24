@@ -7,6 +7,7 @@ import { format } from "date-fns"
 import { CalendarIcon, Check, ChevronsUpDown, Upload, X, Plus, FileText, Paperclip, Package } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -75,6 +76,7 @@ interface WorkOrderFormProps {
 }
 
 export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormProps) {
+    const t = useTranslations('WorkOrderForm')
     const router = useRouter()
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema) as any,
@@ -100,8 +102,8 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
     return (
         <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto w-full pb-24">
             <div className="text-left">
-                <h1 className="text-2xl font-bold tracking-tight">{isEditing ? "Edit Work Order" : "New Work Order"}</h1>
-                <p className="text-muted-foreground">{isEditing ? "Edit existing work order details." : "Create a new work order for maintenance or repairs."}</p>
+                <h1 className="text-2xl font-bold tracking-tight">{isEditing ? t('editTitle') : t('newTitle')}</h1>
+                <p className="text-muted-foreground">{isEditing ? t('editDesc') : t('newDesc')}</p>
             </div>
 
             <Card className="border rounded-lg shadow-none w-full">
@@ -115,9 +117,9 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                                 name="title"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Work Order Name</FormLabel>
+                                        <FormLabel>{t('labels.name')}</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g. Weekly Forklift Inspection" {...field} />
+                                            <Input placeholder={t('placeholders.name')} {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -128,7 +130,7 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                             <div className="rounded-lg border border-dashed px-8 py-10 text-center hover:bg-accent/40 hover:border-primary transition-colors cursor-pointer">
                                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                                     <Upload className="h-8 w-8" />
-                                    <span className="text-sm font-medium">Add or drag pictures</span>
+                                    <span className="text-sm font-medium">{t('buttons.addPicture')}</span>
                                 </div>
                             </div>
 
@@ -138,9 +140,9 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                                 name="description"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Description</FormLabel>
+                                        <FormLabel>{t('labels.description')}</FormLabel>
                                         <FormControl>
-                                            <Textarea placeholder="Describe the issue or task..." className="resize-none" {...field} />
+                                            <Textarea placeholder={t('placeholders.description')} className="resize-none" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -149,15 +151,15 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
 
                             {/* 4. Procedure */}
                             <div className="space-y-2">
-                                <FormLabel>Procedure</FormLabel>
+                                <FormLabel>{t('labels.procedure')}</FormLabel>
                                 <div className="rounded-md border border-dashed p-6 flex flex-col items-center justify-center gap-3 bg-muted/5">
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                         <FileText className="h-4 w-4" />
-                                        <span>Create or attach new Form, Procedure or Checklist</span>
+                                        <span>{t('buttons.createOrAttach')}</span>
                                     </div>
                                     <Button type="button" variant="outline" size="sm" className="gap-2 bg-background">
                                         <Plus className="h-3.5 w-3.5" />
-                                        Add Procedure
+                                        {t('buttons.addProcedure')}
                                     </Button>
                                 </div>
                             </div>
@@ -168,11 +170,11 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                                 name="locationId"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Location</FormLabel>
+                                        <FormLabel>{t('labels.location')}</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
                                                 <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Select location" />
+                                                    <SelectValue placeholder={t('placeholders.selectLocation')} />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
@@ -194,11 +196,11 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                                 name="criticality"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Criticality</FormLabel>
+                                        <FormLabel>{t('labels.criticality')}</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
                                                 <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Select criticality" />
+                                                    <SelectValue placeholder={t('placeholders.selectCriticality')} />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
@@ -219,7 +221,7 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                                 name="assignedTo"
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col">
-                                        <FormLabel>Assign To</FormLabel>
+                                        <FormLabel>{t('labels.assignTo')}</FormLabel>
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
@@ -232,15 +234,15 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                                                         )}
                                                     >
                                                         {(field.value || []).length > 0
-                                                            ? `${(field.value || []).length} selected`
-                                                            : "Select team members"}
+                                                            ? t('messages.selected', { count: (field.value || []).length })
+                                                            : t('placeholders.selectTeam')}
                                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                     </Button>
                                                 </FormControl>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-[200px] p-0">
                                                 <Command>
-                                                    <CommandInput placeholder="Search user..." />
+                                                    <CommandInput placeholder={t('placeholders.searchUser')} />
                                                     <CommandList>
                                                         <CommandEmpty>No user found.</CommandEmpty>
                                                         <CommandGroup>
@@ -299,7 +301,7 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                                 name="dueDate"
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col">
-                                        <FormLabel>Due Date</FormLabel>
+                                        <FormLabel>{t('labels.dueDate')}</FormLabel>
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
@@ -313,7 +315,7 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                                                         {field.value ? (
                                                             format(field.value, "PPP")
                                                         ) : (
-                                                            <span>Pick a date</span>
+                                                            <span>{t('placeholders.pickDate')}</span>
                                                         )}
                                                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                                     </Button>
@@ -342,7 +344,7 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                                 name="scheduleType"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Schedule</FormLabel>
+                                        <FormLabel>{t('labels.schedule')}</FormLabel>
                                         <FormControl>
                                             <div className="flex flex-wrap gap-1 p-1 bg-muted rounded-lg w-fit">
                                                 {SCHEDULE_TYPES.map((type) => (
@@ -365,7 +367,7 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                                         {field.value === "Weekly" && (
                                             <div className="mt-4 space-y-4 p-4 border rounded-lg bg-muted/5">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-sm">Every</span>
+                                                    <span className="text-sm">{t('labels.every')}</span>
                                                     <FormField
                                                         control={form.control}
                                                         name="scheduleInterval"
@@ -378,7 +380,7 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                                                             />
                                                         )}
                                                     />
-                                                    <span className="text-sm">week on</span>
+                                                    <span className="text-sm">{t('labels.weekOn')}</span>
                                                 </div>
                                                 <FormField
                                                     control={form.control}
@@ -413,7 +415,7 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                                                     )}
                                                 />
                                                 <p className="text-xs text-muted-foreground">
-                                                    Repeats every {form.watch("scheduleInterval")} week on {form.watch("scheduleDays").join(", ") || "..."}
+                                                    {t('messages.repeats', { interval: form.watch("scheduleInterval"), days: form.watch("scheduleDays").join(", ") || "..." })}
                                                 </p>
                                             </div>
                                         )}
@@ -428,7 +430,7 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                                 name="priority"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Priority</FormLabel>
+                                        <FormLabel>{t('labels.priority')}</FormLabel>
                                         <FormControl>
                                             <div className="flex flex-wrap gap-1 p-1 bg-muted rounded-lg w-fit">
                                                 {["Low", "Medium", "High"].map((priority) => (
@@ -459,11 +461,11 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                                 name="assetId"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Asset</FormLabel>
+                                        <FormLabel>{t('labels.asset')}</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
                                                 <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Select asset" />
+                                                    <SelectValue placeholder={t('placeholders.selectAsset')} />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
@@ -481,19 +483,19 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
 
                             {/* 12. Files */}
                             <div className="space-y-2">
-                                <FormLabel>Files</FormLabel>
+                                <FormLabel>{t('labels.files')}</FormLabel>
                                 <div className="rounded-md border border-dashed px-4 py-8 flex items-center justify-center gap-2 bg-muted/5 hover:bg-accent/40 hover:border-primary transition-colors cursor-pointer">
                                     <Paperclip className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-sm text-muted-foreground">Attach files</span>
+                                    <span className="text-sm text-muted-foreground">{t('buttons.attachFiles')}</span>
                                 </div>
                             </div>
 
                             {/* 13. Parts */}
                             <div className="space-y-2">
-                                <FormLabel>Parts</FormLabel>
+                                <FormLabel>{t('labels.parts')}</FormLabel>
                                 <div className="rounded-md border border-dashed px-4 py-8 flex items-center justify-center gap-2 bg-muted/5 hover:bg-accent/40 hover:border-primary transition-colors cursor-pointer">
                                     <Package className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-sm text-muted-foreground">Add parts</span>
+                                    <span className="text-sm text-muted-foreground">{t('buttons.addParts')}</span>
                                 </div>
                             </div>
 
@@ -503,9 +505,9 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                                 name="categories"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Categories</FormLabel>
+                                        <FormLabel>{t('labels.categories')}</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g. Electrical, Mechanical" {...field} />
+                                            <Input placeholder={t('placeholders.categories')} {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -518,9 +520,9 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
                                 name="vendors"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Vendors</FormLabel>
+                                        <FormLabel>{t('labels.vendors')}</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g. Grainger" {...field} />
+                                            <Input placeholder={t('placeholders.vendors')} {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -533,10 +535,10 @@ export function WorkOrderForm({ initialData, isEditing = false }: WorkOrderFormP
 
             <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-end gap-4 border-t bg-card p-4 shadow-md sm:px-6">
                 <Button type="button" variant="outline" onClick={() => router.back()}>
-                    Cancel
+                    {t('buttons.cancel')}
                 </Button>
                 <Button type="submit" form="work-order-form">
-                    {isEditing ? "Save Changes" : "Create Work Order"}
+                    {isEditing ? t('buttons.save') : t('buttons.create')}
                 </Button>
             </div>
         </div>

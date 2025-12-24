@@ -1,17 +1,13 @@
-import { proxy } from "@/auth/proxy";
+import createMiddleware from "next-intl/middleware";
+import { LOCALES, DEFAULT_LOCALE, LOCALE_COOKIE } from "./i18n/config";
 
-export default proxy;
+export default createMiddleware({
+    locales: LOCALES,
+    defaultLocale: DEFAULT_LOCALE,
+    localePrefix: "always",
+    localeDetection: false,
+});
 
 export const config = {
-    matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - api/auth (auth routes)
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * - public folder files (if any)
-         */
-        "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\..*).*)",
-    ],
+    matcher: ["/((?!api|_next|.*\\..*).*)"],
 };
