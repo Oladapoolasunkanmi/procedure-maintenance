@@ -238,7 +238,7 @@ export default function TeamDetailPage() {
                             {locations.length > 0 ? (
                                 <div className="space-y-2 mb-4">
                                     {locations.map(loc => (
-                                        <div key={loc.id} className="flex items-center gap-2 p-2 rounded-md border bg-muted/20 cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/locations?id=${loc.id}`)}>
+                                        <div key={loc.id} className="flex items-center gap-2 p-2 rounded-md border bg-muted/20 cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/locations?id=${loc._id}`)}>
                                             <div className="h-8 w-8 rounded bg-gray-200 flex items-center justify-center text-xs font-bold">
                                                 {loc.name.substring(0, 1)}
                                             </div>
@@ -259,7 +259,7 @@ export default function TeamDetailPage() {
                             {assets.length > 0 ? (
                                 <div className="space-y-2 mb-4">
                                     {assets.map(asset => (
-                                        <div key={asset.id} className="flex items-center gap-2 p-2 rounded-md border bg-muted/20 cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/assets?id=${asset.id}`)}>
+                                        <div key={asset.id} className="flex items-center gap-2 p-2 rounded-md border bg-muted/20 cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/assets?id=${asset._id}`)}>
                                             <div className="h-8 w-8 rounded bg-gray-200 flex items-center justify-center text-xs font-bold">
                                                 {asset.name.substring(0, 1)}
                                             </div>
