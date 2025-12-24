@@ -79,20 +79,20 @@ interface AssetFormProps {
     assetId?: string
 }
 
-interface AssetTreeNode {
+// Reusing generic structure for both Asset and Location trees
+interface TreeNode {
     id: string;
     name: string;
-    children?: AssetTreeNode[];
+    children?: TreeNode[];
 }
-
-// ... (AssetTreeNode interface remains)
 
 export function AssetForm({ initialData, isEditing = false, assetId }: AssetFormProps) {
     const router = useRouter()
     const { toast } = useToast()
     const searchParams = useSearchParams()
     const [barcodeMode, setBarcodeMode] = useState<"auto" | "manual">("auto")
-    const [assetTree, setAssetTree] = useState<AssetTreeNode[]>([])
+    const [assetTree, setAssetTree] = useState<TreeNode[]>([])
+    const [locationTree, setLocationTree] = useState<TreeNode[]>([])
     const [teams, setTeams] = useState<any[]>([])
     const [realLocations, setRealLocations] = useState<any[]>([])
     const [isUploadingImage, setIsUploadingImage] = useState(false)
@@ -187,8 +187,8 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                 const data = await res.json()
 
                 if (data.items) {
-                    const nodes: Record<string, AssetTreeNode> = {}
-                    const roots: AssetTreeNode[] = []
+                    const nodes: Record<string, TreeNode> = {}
+                    const roots: TreeNode[] = []
 
                     // First pass: create nodes
                     data.items.forEach((item: any) => {
@@ -237,6 +237,28 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                 const data = await res.json()
                 if (data.items) {
                     setRealLocations(data.items.map((l: any) => ({ ...l, id: l._id || l.id })))
+
+                    // Build Location Tree
+                    const nodes: Record<string, TreeNode> = {}
+                    const roots: TreeNode[] = []
+
+                    // First pass
+                    data.items.forEach((item: any) => {
+                        const id = item.id || item._id
+                        nodes[id] = { id, name: item.name, children: [] }
+                    })
+
+                    // Second pass
+                    data.items.forEach((item: any) => {
+                        const id = item.id || item._id
+                        const parentId = item.parentLocationId
+                        if (parentId && nodes[parentId]) {
+                            nodes[parentId].children?.push(nodes[id])
+                        } else {
+                            roots.push(nodes[id])
+                        }
+                    })
+                    setLocationTree(roots)
                 }
             } catch (error) {
                 console.error("Failed to fetch locations:", error)
@@ -418,22 +440,45 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                     control={form.control}
                                     name="locationId"
                                     render={({ field }) => (
-                                        <FormItem>
+                                        <FormItem className="flex flex-col">
                                             <FormLabel>Location</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl>
-                                                    <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Select location" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    {realLocations.map((loc) => (
-                                                        <SelectItem key={loc.id} value={loc.id}>
-                                                            {loc.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <FormControl>
+                                                        <Button
+                                                            variant="outline"
+                                                            role="combobox"
+                                                            className={cn(
+                                                                "w-full justify-between bg-background",
+                                                                !field.value && "text-muted-foreground"
+                                                            )}
+                                                        >
+                                                            {field.value
+                                                                ? findNodeName(locationTree, field.value) || field.value
+                                                                : "Select location"}
+                                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                        </Button>
+                                                    </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[400px] p-0" align="start">
+                                                    <Command>
+                                                        <CommandInput placeholder="Search location..." />
+                                                        <CommandList>
+                                                            <CommandEmpty>No location found.</CommandEmpty>
+                                                            <CommandGroup>
+                                                                {locationTree.map((node) => (
+                                                                    <TreeItem
+                                                                        key={node.id}
+                                                                        node={node}
+                                                                        selectedValue={field.value}
+                                                                        onSelect={(id) => field.onChange(id)}
+                                                                    />
+                                                                ))}
+                                                            </CommandGroup>
+                                                        </CommandList>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -725,7 +770,7 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                                         )}
                                                     >
                                                         {field.value
-                                                            ? findAssetName(assetTree, field.value) || field.value
+                                                            ? findNodeName(assetTree, field.value) || field.value
                                                             : "Select parent asset"}
                                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                     </Button>
@@ -738,7 +783,7 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                                         <CommandEmpty>No asset found.</CommandEmpty>
                                                         <CommandGroup>
                                                             {assetTree.map((node) => (
-                                                                <AssetTreeItem
+                                                                <TreeItem
                                                                     key={node.id}
                                                                     node={node}
                                                                     selectedValue={field.value}
@@ -787,24 +832,24 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
     )
 }
 
-function findAssetName(nodes: AssetTreeNode[], id: string): string | undefined {
+function findNodeName(nodes: TreeNode[], id: string): string | undefined {
     for (const node of nodes) {
         if (node.id === id) return node.name
         if (node.children) {
-            const found = findAssetName(node.children, id)
+            const found = findNodeName(node.children, id)
             if (found) return found
         }
     }
     return undefined
 }
 
-function AssetTreeItem({
+function TreeItem({
     node,
     selectedValue,
     onSelect,
     level = 0
 }: {
-    node: AssetTreeNode
+    node: TreeNode
     selectedValue?: string
     onSelect: (id: string) => void
     level?: number
@@ -844,7 +889,7 @@ function AssetTreeItem({
             {hasChildren && isExpanded && (
                 <>
                     {node.children!.map((child) => (
-                        <AssetTreeItem
+                        <TreeItem
                             key={child.id}
                             node={child}
                             selectedValue={selectedValue}
