@@ -416,6 +416,7 @@
         },
         "dialog": {
             "addMembers": "Mitglieder zum Team hinzufügen",
+            "addMembersButton": "Mitglieder hinzufügen",
             "searchUser": "Tippen beginnen oder E-Mail einfügen...",
             "invite": "\"{email}\" einladen?",
             "skip": "Überspringen",

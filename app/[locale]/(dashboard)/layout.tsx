@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar"
 import { getSessionOrNull } from "@/auth/session"
+import { redirect } from "next/navigation"
 import {
     SidebarInset,
     SidebarProvider,
@@ -21,10 +22,15 @@ export default async function DashboardLayout({
     children: React.ReactNode
 }) {
     const session = await getSessionOrNull();
-    const user = session ? {
+
+    if (!session) {
+        redirect("/login");
+    }
+
+    const user = {
         name: session.name,
         email: session.email || session.preferred_username,
-    } : undefined;
+    };
 
     return (
         <SidebarProvider>

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 
 export const AUTH_COOKIE = "id_token";
+export const ACCESS_TOKEN_COOKIE = "access_token";
 export const LOGIN_PATH = "/login";
 export const LOGOUT_PATH = "/api/auth/logout";
 
@@ -83,7 +84,7 @@ export function getConfiguredAzureScopes(): string[] {
         .split(/[ ,]+/)
         .map((scope) => scope.trim())
         .filter(Boolean);
-    const baseScopes = ["openid", "profile", "offline_access"];
+    const baseScopes = ["openid", "profile", "offline_access", "User.ReadBasic.All"];
     return Array.from(new Set([...baseScopes, ...scopes]));
 }
 

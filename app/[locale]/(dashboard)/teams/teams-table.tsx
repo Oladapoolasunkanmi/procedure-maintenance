@@ -25,11 +25,12 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { MoreVertical, Plus, Search, Loader2 } from "lucide-react"
+import { MoreVertical, Plus, Search, Loader2, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 import { User, Team, users as initialUsers, teams as initialTeams } from "@/lib/data"
 import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 
@@ -73,22 +74,36 @@ export function TeamsTable() {
             .catch(err => console.error("Failed to fetch user", err))
     }, [])
 
-    // Fetch teams on mount
-    const fetchTeams = async () => {
+    // Fetch teams and users on mount
+    const fetchData = async () => {
         setIsLoading(true)
         try {
-            const res = await fetch("/api/teams")
-            const data = await res.json()
-            if (data.items) {
-                // Map API response items to our Team interface
-                const mappedTeams = data.items.map((item: any) => ({
+            const [teamsRes, usersRes] = await Promise.all([
+                fetch("/api/teams"),
+                fetch("/api/users")
+            ])
+
+            const teamsData = await teamsRes.json()
+            const usersData = await usersRes.json()
+
+            if (teamsData.items) {
+                const mappedTeams = teamsData.items.map((item: any) => ({
                     ...item,
-                    id: item._id || item.id, // Ensure id is mapped
+                    id: item._id || item.id,
                 }))
                 setTeams(mappedTeams)
             }
+
+            if (usersData.items) {
+                const mappedUsers = usersData.items.map((item: any) => ({
+                    ...item,
+                    id: item._id || item.id,
+                }))
+                setUsers(mappedUsers)
+            }
+
         } catch (error) {
-            console.error("Failed to fetch teams:", error)
+            console.error("Failed to fetch data:", error)
             toast({
                 title: t('messages.error'),
                 description: t('messages.loadFail'),
@@ -100,8 +115,68 @@ export function TeamsTable() {
     }
 
     useEffect(() => {
-        fetchTeams()
+        fetchData()
     }, [])
+
+    // ... (Dialog states) ...
+    // ... (Dialog states) ...
+
+    const handleAddMember = async () => {
+        // Logic to add selectedMembers to the team (if we have a current team context)
+        // But the dialog seems to be for a *newly created* team?
+        // "On the dialog to add members to a team... once user chosen... add as chip... add multiple members"
+        // Is this dialog for an existing team or the flow after creating a team?
+        // The code `if (!isEditing) { setIsAddMembersDialogOpen(true) }` (line 199) suggests it opens after creating a team.
+        // It doesn't seem to pass the `newTeam` ID to the dialog explicitly, but `newTeam` state might still hold it? 
+        // Actually `newTeam` is reset on line 208.
+        // We probably need to track which team we are adding members to. 
+        // But let's assume valid flow:
+        // If we just created a team, we need its ID. `teamData` had it (line 176).
+        // But `newTeam` state is reset.
+        // The previous code didn't seem to have a target team for "Add members" dialog except maybe conceptually? 
+        // Ah, `handleCreateTeam` calls `fetchTeams`. The new team is in the list.
+        // But how does "Add Members" dialog know which team?
+        // Maybe we should store `createdTeamId`?
+
+        // Wait, the user requirement says: "On the dialog to add members to a team..."
+        // If I look at the screenshot, it's "Add Members to the Team".
+
+        // Let's check `handleCreateTeam` again.
+        // It resets `newTeam`.
+        // So `isAddMembersDialogOpen` is true, but we don't know which team.
+
+        // I will modify `handleCreateTeam` to NOT reset `newTeam` immediately or store the ID.
+        // Or cleaner: `createdTeamId` state.
+    }
+
+    // Actually, I will search for the code chunk and replace the whole component's logical parts.
+
+    // Re-implementation of Add Members Dialog Logic:
+
+    // Re-implementation of Add Members Dialog Logic:
+
+    // ... inside handleCreateTeam ...
+    // Store ID before reset.
+    // setCreatedTeamId(teamData.id)
+    // ...
+
+    // ... Dialog UI ...
+    // Remove the "invite email" logic.
+    // Use multi-select logic.
+
+    // Let's implement this in parts using `replace_file_content` or `multi_replace`.
+    // I'll use `replace_file_content` for the whole file if I can, but it is large.
+    // The previous view_file `lines 1 to 581` shows it fits in one view. 
+    // I need to be careful with `replace_file_content` on large files.
+    // I'll try `multi_replace_file_content`.
+
+    // 1. Update `fetchTeams` to `fetchData` (users + teams).
+    // 2. Update `handleCreateTeam` to set `createdTeamId`.
+    // 3. Update `Add Members` dialog JSX.
+
+    // Let's start with `fetchData` and `useEffect`.
+
+
 
     // Dialog states
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -114,6 +189,60 @@ export function TeamsTable() {
     // Delete Confirmation State
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     const [teamToDelete, setTeamToDelete] = useState<string | null>(null)
+
+    // Add Members Dialog State
+    // Add Members Dialog State
+    const [selectedTeams, setSelectedTeams] = useState<string[]>([])
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+    const [createdTeamId, setCreatedTeamId] = useState<string | null>(null)
+    const [selectedMembers, setSelectedMembers] = useState<User[]>([])
+    const [memberSearch, setMemberSearch] = useState("")
+
+    // ... existing handleFileUpload ...
+
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedTeams(filteredTeams.map(t => t.id))
+        } else {
+            setSelectedTeams([])
+        }
+    }
+
+    const handleSelectOne = (id: string, checked: boolean) => {
+        if (checked) {
+            setSelectedTeams(prev => [...prev, id])
+        } else {
+            setSelectedTeams(prev => prev.filter(tid => tid !== id))
+        }
+    }
+
+    const handleBulkDelete = async () => {
+        if (!confirm(t('dialog.deleteConfirm'))) return // Basic confirmation or use Dialog? User didn't specify, but safer. 
+        // Or re-use the delete dialog logic? 
+        // Let's use a simple confirm for bulk or just proceed with isBulkDeleting state if explicit button clicked.
+
+        setIsBulkDeleting(true)
+        try {
+            await Promise.all(selectedTeams.map(id =>
+                fetch(`/api/teams?id=${id}`, { method: "DELETE" })
+            ))
+            await fetchData()
+            setSelectedTeams([])
+            toast({
+                title: t('messages.deleted'),
+                description: t('messages.deleteSuccess')
+            })
+        } catch (error) {
+            console.error(error)
+            toast({
+                title: t('messages.error'),
+                description: t('messages.deleteFail'),
+                variant: "destructive"
+            })
+        } finally {
+            setIsBulkDeleting(false)
+        }
+    }
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -163,13 +292,10 @@ export function TeamsTable() {
         setIsSaving(true)
         try {
             const isEditing = !!newTeam.id
-            const adminId = newTeam.administratorId || currentUser?.sub || users[0]?.id
 
-            // Ensure admin is in memberIds
+            // Do NOT auto-assign current user as admin or member
+            const adminId = newTeam.administratorId // Keep existing if any, or undefined.
             const currentMembers = newTeam.memberIds || []
-            if (adminId && !currentMembers.includes(adminId)) {
-                currentMembers.push(adminId)
-            }
 
             const teamData = {
                 ...newTeam,
@@ -193,10 +319,16 @@ export function TeamsTable() {
                 throw new Error(err.error || `Failed to ${isEditing ? "upate" : "create"} team`)
             }
 
-            await fetchTeams()
+            const responseData = await res.json()
+
+            await fetchData()
 
             setIsCreateDialogOpen(false)
             if (!isEditing) {
+                // Use the ID returned by the API (item_id) if available, otherwise fallback
+                const newId = responseData.item_id || teamData.id
+                setCreatedTeamId(newId as string)
+                setSelectedMembers([])
                 setIsAddMembersDialogOpen(true)
             }
 
@@ -236,7 +368,7 @@ export function TeamsTable() {
                 throw new Error("Failed to delete team")
             }
 
-            await fetchTeams()
+            await fetchData()
             toast({
                 title: t('messages.deleted'),
                 description: t('messages.deleteSuccess')
@@ -291,14 +423,26 @@ export function TeamsTable() {
         <div className="space-y-4">
             {/* ... (Search and Create Button remain same) ... */}
             <div className="flex items-center justify-between">
-                <div className="relative w-72">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder={t('searchPlaceholder')}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-8"
-                    />
+                <div className="flex items-center gap-2">
+                    <div className="relative w-72">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder={t('searchPlaceholder')}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-8"
+                        />
+                    </div>
+                    {selectedTeams.length > 0 && (
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleBulkDelete}
+                            disabled={isBulkDeleting}
+                        >
+                            {isBulkDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : t('actions.delete')} ({selectedTeams.length})
+                        </Button>
+                    )}
                 </div>
                 <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-orange-600 hover:bg-orange-700 text-white">
                     <Plus className="mr-2 h-4 w-4" />
@@ -310,6 +454,12 @@ export function TeamsTable() {
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead className="w-[50px]">
+                                <Checkbox
+                                    checked={filteredTeams.length > 0 && selectedTeams.length === filteredTeams.length}
+                                    onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                                />
+                            </TableHead>
                             <TableHead>{t('table.name')}</TableHead>
                             <TableHead>{t('table.admin')}</TableHead>
                             <TableHead>{t('table.members')}</TableHead>
@@ -341,6 +491,12 @@ export function TeamsTable() {
                                         className="cursor-pointer hover:bg-muted/50"
                                         onClick={() => router.push(`/teams/${team._id || team.id}`)}
                                     >
+                                        <TableCell onClick={(e) => e.stopPropagation()}>
+                                            <Checkbox
+                                                checked={selectedTeams.includes(team.id)}
+                                                onCheckedChange={(checked) => handleSelectOne(team.id, checked as boolean)}
+                                            />
+                                        </TableCell>
                                         <TableCell className="font-medium">
                                             <div className="flex items-center gap-3">
                                                 <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold overflow-hidden relative`} style={{ backgroundColor: team.image ? 'transparent' : (team.color === 'blue' ? '#3b82f6' : team.color) }}>
@@ -519,46 +675,113 @@ export function TeamsTable() {
 
             {/* Add Members Dialog - Updated */}
             <Dialog open={isAddMembersDialogOpen} onOpenChange={setIsAddMembersDialogOpen}>
-                <DialogContent className="sm:max-w-[500px] h-[600px] flex flex-col">
+                <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle>{t('dialog.addMembers')}</DialogTitle>
                     </DialogHeader>
-                    <div className="py-4 flex-1 space-y-4">
-                        <Input
-                            placeholder={t('dialog.searchUser')}
-                            value={inviteEmail}
-                            onChange={(e) => setInviteEmail(e.target.value)}
-                        />
+                    <div className="py-4 space-y-4">
+                        <div className="flex flex-wrap gap-2 mb-2 p-2 border rounded-md min-h-[42px]">
+                            {selectedMembers.map(member => (
+                                <Badge key={member.id} variant="secondary" className="gap-1 pr-1">
+                                    {member.name}
+                                    <button
+                                        onClick={() => setSelectedMembers(prev => prev.filter(m => m.id !== member.id))}
+                                        className="hover:bg-muted rounded-full p-0.5"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </Badge>
+                            ))}
+                            <Input
+                                className="border-0 focus-visible:ring-0 px-1 min-w-[120px] flex-1 h-6"
+                                placeholder={selectedMembers.length === 0 ? t('dialog.searchUser') : ""}
+                                value={memberSearch}
+                                onChange={(e) => setMemberSearch(e.target.value)}
+                            />
+                        </div>
 
-                        {!inviteEmail ? (
-                            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground -mt-10">
-                                <div className="h-16 w-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
-                                    <Search className="h-8 w-8 text-orange-600" />
+                        {/* List users by default (excluding selected) */}
+                        <div className="border rounded-md min-h-120 max-h-120 overflow-y-auto">
+                            {users
+                                .filter(u =>
+                                    !selectedMembers.find(m => m.id === u.id) &&
+                                    (u.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
+                                        u.email.toLowerCase().includes(memberSearch.toLowerCase()))
+                                )
+                                .slice(0, 50) // Show more since it's the default list
+                                .map(user => (
+                                    <div
+                                        key={user.id}
+                                        className="px-3 py-2 hover:bg-muted cursor-pointer flex items-center gap-2"
+                                        onClick={() => {
+                                            setSelectedMembers(prev => [...prev, user])
+                                            setMemberSearch("")
+                                        }}
+                                    >
+                                        <Avatar className="h-6 w-6">
+                                            <AvatarImage src={user.avatar} />
+                                            <AvatarFallback>{(user.name || "?").substring(0, 2).toUpperCase()}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-medium">{user.name}</span>
+                                            <span className="text-xs text-muted-foreground">{user.email}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            {users.filter(u => !selectedMembers.find(m => m.id === u.id)).length === 0 && (
+                                <div className="p-4 text-center text-sm text-muted-foreground">
+                                    {t('empty.noMembers')}
                                 </div>
-                                <p>{t('empty.noMembers')}</p>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center h-full space-y-4 -mt-10">
-                                <div className="h-20 w-20 bg-orange-50 rounded-full flex items-center justify-center mb-2">
-                                    <Search className="h-10 w-10 text-orange-500" />
-                                </div>
-                                <p className="text-muted-foreground text-center px-4">
-                                    No results found for &quot;{inviteEmail}&quot;.
-                                </p>
-                                <Button
-                                    className="bg-orange-600 hover:bg-orange-700 text-white w-full max-w-sm mt-4"
-                                    onClick={handleInviteMember}
-                                    disabled={isInviting}
-                                >
-                                    {isInviting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    {t('dialog.invite', { email: inviteEmail })}
-                                </Button>
-                            </div>
-                        )}
+                            )}
+                        </div>
+
+                        <Button
+                            className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                            onClick={async () => {
+                                if (!createdTeamId || selectedMembers.length === 0) return
+                                setIsInviting(true)
+                                try {
+                                    // Update team with new members
+                                    // First get current team members to merge?
+                                    // Assuming createdTeamId is fresh, we just append.
+                                    // But safer to fetch or use what we know.
+                                    // Wait, we have 'teams' state.
+                                    const team = teams.find(t => t.id === createdTeamId)
+                                    const currentMembers = team ? team.memberIds : []
+                                    const newMemberIds = selectedMembers.map(u => u.id)
+                                    const updatedMembers = [...new Set([...currentMembers, ...newMemberIds])]
+
+                                    const res = await fetch("/api/teams", {
+                                        method: "PUT",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({
+                                            id: createdTeamId,
+                                            memberIds: updatedMembers
+                                        })
+                                    })
+
+                                    if (!res.ok) throw new Error("Failed to add members")
+
+                                    await fetchData()
+                                    toast({
+                                        title: t('messages.updated'),
+                                        description: "Members added successfully"
+                                    })
+                                    setIsAddMembersDialogOpen(false)
+                                    router.push(`/teams/${createdTeamId}`)
+                                } catch (error) {
+                                    console.error(error)
+                                    toast({ variant: "destructive", title: "Error", description: "Failed to add members" })
+                                } finally {
+                                    setIsInviting(false)
+                                }
+                            }}
+                            disabled={isInviting || selectedMembers.length === 0}
+                        >
+                            {isInviting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {t('dialog.addMembersButton')}
+                        </Button>
                     </div>
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsAddMembersDialogOpen(false)} className="text-orange-600">{t('dialog.skip')}</Button>
-                    </DialogFooter>
                 </DialogContent>
             </Dialog>
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

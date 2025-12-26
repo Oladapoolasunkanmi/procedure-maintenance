@@ -14,19 +14,19 @@ export default function TeamsPage() {
                 <h1 className="text-2xl font-bold">{t('pageTitle')}</h1>
             </div>
 
-            <Tabs defaultValue="teams" className="w-full">
+            <Tabs defaultValue="users" className="w-full">
                 <SlidingTabsList>
-                    {/* <SlidingTabsTrigger value="users">
+                    <SlidingTabsTrigger value="users">
                         Users
-                    </SlidingTabsTrigger> */}
+                    </SlidingTabsTrigger>
                     <SlidingTabsTrigger value="teams">
                         {t('tabs.teams')}
                     </SlidingTabsTrigger>
                 </SlidingTabsList>
 
-                {/* <TabsContent value="users" className="mt-0">
+                <TabsContent value="users" className="mt-0">
                     <UsersTable />
-                </TabsContent> */}
+                </TabsContent>
                 <TabsContent value="teams" className="mt-0">
                     <TeamsTable />
                 </TabsContent>

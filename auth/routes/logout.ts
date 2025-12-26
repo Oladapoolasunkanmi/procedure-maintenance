@@ -4,5 +4,6 @@ import { AUTH_COOKIE, getPostLogoutRedirect } from "../config";
 export function handleLogout(request: NextRequest): NextResponse {
     const response = NextResponse.redirect(getPostLogoutRedirect(request));
     response.cookies.set(AUTH_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
+    response.cookies.set("access_token", "", { httpOnly: true, path: "/", maxAge: 0 });
     return response;
 }

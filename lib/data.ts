@@ -9,6 +9,7 @@ export interface User {
     avatar?: string;
     role?: string;
     lastVisit?: string;
+    hasJoined?: boolean;
 }
 
 export interface Location {

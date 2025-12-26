@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AUTH_COOKIE } from "../config";
+import { AUTH_COOKIE, ACCESS_TOKEN_COOKIE } from "../config";
 import { getMsalApp, getMsalRedirectUri, getMsalScopes } from "../msal";
 
 export async function handleCallback(request: NextRequest): Promise<NextResponse> {
@@ -18,10 +18,14 @@ export async function handleCallback(request: NextRequest): Promise<NextResponse
     });
 
     const idToken = tokenResult?.idToken;
+    const accessToken = tokenResult?.accessToken;
     const expiresOn = tokenResult?.expiresOn;
-    if (!idToken || !expiresOn) {
+
+    if (!idToken || !accessToken || !expiresOn) {
         return NextResponse.json({ error: "Failed to acquire token" }, { status: 401 });
     }
+
+    // ... (rest of redirection logic)
 
     let redirectTo = "/";
     let isPopup = false;
@@ -50,6 +54,14 @@ export async function handleCallback(request: NextRequest): Promise<NextResponse
         : NextResponse.redirect(redirectUrl);
 
     response.cookies.set(AUTH_COOKIE, idToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        expires: expiresOn,
+    });
+
+    response.cookies.set(ACCESS_TOKEN_COOKIE, accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
