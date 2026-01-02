@@ -106,18 +106,50 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: "Part ID is required" }, { status: 400 });
         }
 
+        // First, lookup the item to get its _id
+        let targetId = id;
+
+        const payloadCheck = {
+            db_name: "andechser_maintenance_system",
+            coll_name: "parts",
+            filters: { id: id },
+            limit: 1
+        };
+        const checkRes = await apiClient.post('/api/v2/cosmosdb/query-items', payloadCheck);
+        const item = (checkRes.data && Array.isArray(checkRes.data)) ? checkRes.data[0]
+            : (checkRes.data?.items && checkRes.data.items.length > 0) ? checkRes.data.items[0] : null;
+
+        if (item && item._id) {
+            targetId = item._id;
+        } else {
+            // Fallback: Check if it was passed AS _id
+            const payloadIdCheck = {
+                db_name: "andechser_maintenance_system",
+                coll_name: "parts",
+                filters: { _id: id }
+            };
+            const checkRes2 = await apiClient.post('/api/v2/cosmosdb/query-items', payloadIdCheck);
+            const item2 = (checkRes2.data && Array.isArray(checkRes2.data)) ? checkRes2.data[0]
+                : (checkRes2.data?.items && checkRes2.data.items.length > 0) ? checkRes2.data.items[0] : null;
+            if (item2) {
+                targetId = item2._id;
+            }
+        }
+
         const payload = {
             db_name: "andechser_maintenance_system",
             coll_name: "parts",
-            id: id,
+            filters: {
+                _id: targetId
+            }
         };
 
-        await apiClient.post(`/api/v2/cosmosdb/delete-item`, payload);
-        return NextResponse.json({ success: true });
+        const response = await apiClient.delete('/api/v2/cosmosdb/items', { data: payload });
+        return NextResponse.json(response.data);
     } catch (error: any) {
-        console.error("Error deleting part:", error);
+        console.error("Error deleting part:", error.response?.data || error);
         return NextResponse.json(
-            { error: error.message || "Failed to delete part" },
+            { error: error.response?.data || error.message || "Failed to delete part" },
             { status: error.response?.status || 500 }
         );
     }
