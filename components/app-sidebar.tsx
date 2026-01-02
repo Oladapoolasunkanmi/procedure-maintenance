@@ -85,11 +85,11 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
             url: "/procedures",
             icon: FileText,
         },
-        {
-            title: t('requests'),
-            url: "/requests",
-            icon: FileText,
-        },
+        // {
+        //     title: t('requests'),
+        //     url: "/requests",
+        //     icon: FileText,
+        // },
         {
             title: t('parts'),
             url: "/parts",
