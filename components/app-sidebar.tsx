@@ -91,9 +91,19 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
             icon: FileText,
         },
         {
+            title: t('parts'),
+            url: "/parts",
+            icon: Box,
+        },
+        {
             title: t('locations'),
             url: "/locations",
             icon: MapPin,
+        },
+        {
+            title: t('vendors'),
+            url: "/vendors",
+            icon: Package,
         },
         {
             title: t('teams'),

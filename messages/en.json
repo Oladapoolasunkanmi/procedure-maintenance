@@ -5,6 +5,8 @@
         "procedures": "Procedures",
         "requests": "Requests",
         "locations": "Locations",
+        "vendors": "Vendors",
+        "parts": "Parts",
         "teams": "Teams",
         "title": "OpsCMMS",
         "version": "v1.0.0",
@@ -30,7 +32,8 @@
         "loading": "Loading...",
         "save": "Save",
         "cancel": "Cancel",
-        "error": "Error"
+        "error": "Error",
+        "noDescription": "No description provided."
     },
     "WorkOrders": {
         "title": "Work Orders",
@@ -67,7 +70,12 @@
         "priorities": {
             "High": "High",
             "Medium": "Medium",
-            "Low": "Low"
+            "Low": "Low",
+            "None": "None"
+        },
+        "subWorkOrders": "Sub-Work Orders",
+        "buttons": {
+            "addParts": "Add Parts"
         }
     },
     "Assets": {
@@ -84,7 +92,8 @@
             "model": "Model",
             "serialNumber": "Serial Number",
             "manufacturer": "Manufacturer",
-            "vendor": "Vendor"
+            "vendor": "Vendor",
+            "part": "Part"
         },
         "addFilter": "Add Filter",
         "clearFilters": "Clear Filters",
@@ -126,11 +135,13 @@
         "newDesc": "Create a new work order for maintenance or repairs.",
         "labels": {
             "name": "Work Order Name",
+            "pictures": "Pictures",
             "description": "Description",
             "procedure": "Procedure",
             "location": "Location",
             "criticality": "Criticality",
             "assignTo": "Assign To",
+            "estimatedHours": "Estimated Hours",
             "dueDate": "Due Date",
             "schedule": "Schedule",
             "priority": "Priority",
@@ -159,14 +170,18 @@
             "addProcedure": "Add Procedure",
             "createOrAttach": "Create or attach new Form, Procedure or Checklist",
             "attachFiles": "Attach files",
-            "addParts": "Add parts",
+            "addParts": "Add Parts",
             "save": "Save Changes",
             "create": "Create Work Order",
-            "cancel": "Cancel"
+            "cancel": "Cancel",
+            "uploading": "Uploading..."
         },
         "messages": {
             "repeats": "Repeats every {interval} week on {days}",
-            "selected": "{count} selected"
+            "selected": "{count} selected",
+            "created": "Work Order Created",
+            "updated": "Work Order Updated",
+            "error": "Error"
         }
     },
     "AssetForm": {
@@ -240,13 +255,21 @@
             "status": "Status",
             "description": "Description",
             "manufacturer": "Manufacturer",
+            "model": "Model",
             "year": "Year",
             "location": "Location",
             "criticality": "Criticality",
             "barcode": "Barcode",
             "pictures": "Pictures",
             "files": "Files",
-            "subAssets": "Sub-Assets"
+            "subAssets": "Sub-Assets",
+            "vendor": "Vendor",
+            "parts": "Parts"
+        },
+        "status": {
+            "Online": "Online",
+            "Offline": "Offline",
+            "Do Not Track": "Do Not Track"
         },
         "actions": {
             "edit": "Edit",
@@ -273,6 +296,109 @@
             "deleteDesc": "Are you sure you want to delete {name}? This action cannot be undone.",
             "cancel": "Cancel",
             "confirmDelete": "Delete"
+        }
+    },
+    "Vendors": {
+        "title": "Vendors",
+        "createVendor": "Create Vendor",
+        "noVendors": "No vendors found",
+        "getStarted": "Get started by creating a new vendor.",
+        "noSelection": "No Vendor Selected",
+        "selectToView": "Select a vendor to view details.",
+        "searchPlaceholder": "Search...",
+        "sortBy": "Sort by",
+        "filter": {
+            "name": "Name",
+            "type": "Type",
+            "location": "Location",
+            "asset": "Asset",
+            "part": "Part",
+            "allTypes": "All Types",
+            "allLocations": "All Locations",
+            "allAssets": "All Assets",
+            "allParts": "All Parts"
+        },
+        "sortOptions": {
+            "latest": "Latest Created",
+            "oldest": "Oldest Created",
+            "nameAsc": "Name (A-Z)",
+            "nameDesc": "Name (Z-A)"
+        },
+        "card": {
+            "contacts": "Contacts",
+            "locs": "Locs"
+        },
+        "detail": {
+            "edit": "Edit Vendor",
+            "delete": "Delete Vendor",
+            "deleteDialog": {
+                "title": "Are you absolutely sure?",
+                "description": "This action cannot be undone. This will permanently delete the vendor {name}.",
+                "cancel": "Cancel",
+                "confirm": "Delete"
+            },
+            "description": "Description",
+            "website": "Website",
+            "contacts": "Contacts",
+            "locations": "Locations",
+            "assets": "Assets",
+            "parts": "Parts",
+            "files": "Files",
+            "pictures": "Pictures"
+        },
+        "form": {
+            "title": {
+                "create": "Create Vendor",
+                "edit": "Edit Vendor"
+            },
+            "labels": {
+                "name": "Company Name",
+                "desc": "Description",
+                "color": "Color",
+                "address": "Address",
+                "website": "Website",
+                "types": "Vendor Type",
+                "locations": "Locations",
+                "assets": "Assets",
+                "parts": "Parts",
+                "contacts": "Contacts",
+                "pictures": "Pictures",
+                "files": "Files",
+                "contactName": "Name",
+                "contactEmail": "Email",
+                "contactPhone": "Phone",
+                "contactRole": "Role"
+            },
+            "placeholders": {
+                "name": "Company Name",
+                "desc": "Vendor description...",
+                "address": "Address",
+                "website": "Website URL",
+                "type": "Select type",
+                "searchType": "Search type...",
+                "locations": "Select locations...",
+                "assets": "Select assets...",
+                "parts": "Select parts...",
+                "searchParts": "Search parts...",
+                "contactName": "Name",
+                "contactEmail": "Email",
+                "contactPhone": "Phone",
+                "contactRole": "Role"
+            },
+            "buttons": {
+                "addContact": "Add Contact",
+                "addPicture": "Add Picture",
+                "addFile": "Add File",
+                "uploading": "Uploading...",
+                "save": "Save Vendor",
+                "create": "Create Vendor"
+            },
+            "messages": {
+                "created": "Vendor created successfully",
+                "updated": "Vendor updated successfully",
+                "error": "Failed to save vendor",
+                "typeCreated": "Type '{type}' created and selected"
+            }
         }
     },
     "Locations": {
@@ -483,6 +609,274 @@
                 "sentDesc": "Successfully sent {count} invite(s).",
                 "linkTitle": "Link Copied",
                 "linkDesc": "Invite link copied to clipboard."
+            }
+        }
+    },
+    "Parts": {
+        "title": "Parts",
+        "create": "Create Part",
+        "searchPlaceholder": "Search parts...",
+        "filters": {
+            "type": "Type",
+            "allTypes": "All Types",
+            "location": "Location",
+            "allLocations": "All Locations",
+            "asset": "Asset",
+            "allAssets": "All Assets",
+            "vendor": "Vendor",
+            "allVendors": "All Vendors",
+            "area": "Area",
+            "clear": "Clear"
+        },
+        "sortBy": {
+            "label": "Sort by",
+            "newest": "Newest",
+            "oldest": "Oldest",
+            "nameAsc": "Name (A-Z)",
+            "nameDesc": "Name (Z-A)"
+        },
+        "results": "{count} results",
+        "empty": {
+            "title": "No parts found",
+            "description": "Get started by creating a new part.",
+            "noSelection": "No Part Selected",
+            "selectToView": "Select a part to view details."
+        },
+        "card": {
+            "inStock": "in stock",
+            "outOfStock": "Out of stock"
+        },
+        "actions": {
+            "create": "Create Part",
+            "edit": "Edit",
+            "delete": "Delete",
+            "view": "View Details",
+            "cancel": "Cancel",
+            "save": "Save",
+            "add": "Add",
+            "upload": "Upload"
+        },
+        "form": {
+            "title": {
+                "create": "Create Part",
+                "edit": "Edit Part"
+            },
+            "labels": {
+                "name": "Name",
+                "unitCost": "Unit Cost ($)",
+                "description": "Description",
+                "barcode": "QR / Barcode",
+                "partType": "Part Type",
+                "stockLocations": "Stock Locations",
+                "location": "Location",
+                "area": "Area",
+                "inStock": "In Stock",
+                "minStock": "Min. Stock",
+                "assets": "Assets",
+                "teams": "Teams In Charge",
+                "vendors": "Vendors",
+                "files": "Files"
+            },
+            "placeholders": {
+                "name": "Part Name",
+                "cost": "0.00",
+                "description": "Part description...",
+                "barcode": "Scan or enter code",
+                "partType": "Select type",
+                "searchType": "Search type...",
+                "location": "Select location",
+                "area": "Area...",
+                "assets": "Select linked assets...",
+                "teams": "Select teams...",
+                "searchTeams": "Search teams...",
+                "vendors": "Select vendors...",
+                "searchVendors": "Search vendors...",
+                "searchParts": "Search parts..."
+            },
+            "buttons": {
+                "generate": "Generate Random Code",
+                "addLocation": "Add Location",
+                "addFile": "Add File",
+                "uploading": "Uploading..."
+            },
+            "messages": {
+                "created": "Part created successfully",
+                "updated": "Part updated successfully",
+                "error": "Failed to save part",
+                "typeCreated": "Type '{type}' created and selected"
+            }
+        },
+        "detail": {
+            "restock": "Restock",
+            "edit": "Edit",
+            "delete": "Delete Part",
+            "printQR": "Print QR",
+            "deleteDialog": {
+                "title": "Are you absolutely sure?",
+                "description": "This action cannot be undone. This will permanently delete {name}.",
+                "cancel": "Cancel",
+                "confirm": "Delete"
+            },
+            "sections": {
+                "minStock": "Minimum Stock",
+                "unitCost": "Unit Cost",
+                "partType": "Part Type",
+                "available": "Available",
+                "stockLocation": "Stock Location",
+                "assets": "Assets Using This Part",
+                "vendors": "Vendors",
+                "files": "Files"
+            },
+            "table": {
+                "location": "Location",
+                "area": "Area",
+                "inStock": "In Stock",
+                "minStock": "Min. Stock"
+            },
+            "restockDialog": {
+                "title": "Restock Items",
+                "location": "Location",
+                "selectLocation": "Select location",
+                "note": "Note",
+                "notePlaceholder": "You can leave a note explaining the change",
+                "upload": "Add Pictures/Files",
+                "uploading": "Uploading...",
+                "cancel": "Cancel",
+                "confirm": "Confirm Restock"
+            }
+        }
+    },
+    "Procedures": {
+        "title": "Procedure Library",
+        "newProcedure": "New Procedure Template",
+        "searchPlaceholder": "Search Procedure Templates",
+        "sortBy": {
+            "label": "Sort By",
+            "nameAsc": "Name: Ascending Order",
+            "nameDesc": "Name: Descending Order",
+            "dateAsc": "Date: Oldest First",
+            "dateDesc": "Date: Newest First"
+        },
+        "filters": {
+            "category": "Category",
+            "team": "Team",
+            "location": "Location",
+            "asset": "Asset",
+            "reset": "Reset",
+            "selected": "{count} selected"
+        },
+        "empty": {
+            "noProcedures": "No procedures found.",
+            "noSelection": "No Procedure Selected",
+            "selectToView": "Select a procedure from the list to view details."
+        },
+        "actions": {
+            "edit": "Edit",
+            "duplicate": "Duplicate",
+            "delete": "Delete",
+            "fields": "fields"
+        },
+        "detail": {
+            "fieldsTab": "Fields",
+            "detailsTab": "Details",
+            "procedureTags": "Procedure Tags",
+            "categories": "Categories",
+            "locations": "Locations",
+            "teamInCharge": "Team in Charge",
+            "noTeams": "No teams assigned",
+            "meta": {
+                "createdBy": "Created By",
+                "updatedBy": "Last updated By",
+                "on": "on"
+            },
+            "deleteDialog": {
+                "title": "Delete Procedure",
+                "description": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+                "confirm": "Delete",
+                "cancel": "Cancel"
+            },
+            "duplicateDialog": {
+                "title": "Duplicate Procedure",
+                "description": "Are you sure you want to duplicate \"{name}\"? A new copy will be created.",
+                "confirm": "Duplicate",
+                "cancel": "Cancel"
+            }
+        },
+        "builder": {
+            "title": "Procedure Builder",
+            "untitled": "Untitled Procedure",
+            "save": "Save Procedure",
+            "saving": "Saving...",
+            "saved": "Procedure saved",
+            "tabs": {
+                "canvas": "Canvas",
+                "preview": "Preview",
+                "settings": "Settings"
+            },
+            "canvas": {
+                "dragFields": "Drag fields from the sidebar",
+                "dropZone": "Drop fields here to build your form"
+            },
+            "settings": {
+                "procedureName": "Procedure Name",
+                "description": "Description",
+                "organization": "Organization",
+                "categories": "Categories",
+                "teams": "Teams in Charge",
+                "locations": "Locations",
+                "assets": "Assets",
+                "scoring": "Scoring"
+            },
+            "fields": {
+                "text": "Text Input",
+                "number": "Number Input",
+                "checkbox": "Checkbox",
+                "select": "Dropdown",
+                "date": "Date & Time",
+                "image": "Image Upload",
+                "signature": "Signature",
+                "instruction": "Instruction",
+                "options": "Options",
+                "required": "Required",
+                "label": "Label",
+                "placeholder": "Placeholder"
+            }
+        },
+        "toolbox": {
+            "newItem": "New Item",
+            "field": "Field",
+            "heading": "Heading",
+            "section": "Section"
+        },
+        "fieldTypes": {
+            "text": "Text Field",
+            "checkbox": "Checkbox",
+            "number": "Number Field",
+            "amount": "Amount Field",
+            "multipleChoice": "Multiple Choice",
+            "checklist": "Checklist",
+            "yesNo": "Yes or No",
+            "inspection": "Inspection Check",
+            "signature": "Signature Block",
+            "date": "Date",
+            "photo": "Picture/File Field"
+        },
+        "new": {
+            "title": "Create a New Procedure Template",
+            "subtitle": "Give your procedure a name and description to get started.",
+            "blankCard": {
+                "title": "Blank Procedure",
+                "description": "Start Procedure From Scratch"
+            },
+            "dialog": {
+                "title": "Bring your new procedure to life",
+                "description": "Give your procedure a name and description to get started.",
+                "nameLabel": "Give it a name",
+                "namePlaceholder": "e.g. Fire Extinguisher Inspection",
+                "descLabel": "Add a description (optional)",
+                "descPlaceholder": "Routine inspection form...",
+                "cancel": "Cancel",
+                "next": "Next"
             }
         }
     }

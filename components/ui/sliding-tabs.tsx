@@ -66,7 +66,7 @@ export const SlidingTabsList = React.forwardRef<React.ElementRef<typeof TabsList
         }, [updateIndicator])
 
         return (
-            <div className="border-b mb-6 relative w-full">
+            <div className="relative w-full">
                 <TabsList
                     ref={listRef}
                     className={cn(

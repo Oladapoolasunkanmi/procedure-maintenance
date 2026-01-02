@@ -1,4 +1,4 @@
-export type Priority = "Low" | "Medium" | "High";
+export type Priority = "Low" | "Medium" | "High" | "None";
 export type Status = "Open" | "In Progress" | "On Hold" | "Done";
 export type Criticality = "Low" | "Medium" | "High" | "Critical";
 
@@ -82,7 +82,7 @@ export interface WorkOrder {
     id: string;
     title: string;
     description?: string;
-    procedure?: string;
+    procedure?: string[];
     locationId: string;
     assetId?: string;
     criticality?: Criticality;
@@ -91,10 +91,20 @@ export interface WorkOrder {
     priority: Priority;
     status: Status;
     files?: string[];
+    images?: string[];
     parts?: string[];
     categories?: string[];
     vendors?: string[];
     createdAt: string;
+    parentWorkOrderId?: string;
+    isBatchParent?: boolean;
+    estimatedTime?: string;
+    updatedAt?: string;
+    history?: any[];
+    scheduleType?: string;
+    scheduleInterval?: number;
+    scheduleDays?: string[];
+    procedureData?: Record<string, any>;
 }
 
 export const users: User[] = [
@@ -205,7 +215,7 @@ export interface Procedure {
 
 export interface ProcedureField {
     id: string;
-    type: "text" | "checkbox" | "number" | "multiple_choice" | "photo" | "signature" | "instruction";
+    type: "text" | "checkbox" | "number" | "multiple_choice" | "photo" | "signature" | "instruction" | "date" | "currency";
     label: string;
     required: boolean;
     options?: string[]; // For multiple choice
@@ -304,6 +314,31 @@ export interface Team {
     image?: string;
     createdAt: string;
 }
+
+export interface Vendor {
+    id: string;
+    _id?: string;
+    name: string;
+    description?: string;
+    color?: string;
+    images?: string[]; // Pictures
+    image?: string; // Main image
+    contacts?: { name: string; email?: string; phone?: string; role?: string }[];
+    files?: string[];
+    locationIds?: string[];
+    assetIds?: string[];
+    partIds?: string[];
+    vendorType?: string;
+    website?: string;
+    address?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    createdBy?: {
+        id: string;
+        name: string;
+    };
+}
+
 
 export const teams: Team[] = [
     {

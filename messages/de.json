@@ -5,6 +5,8 @@
         "procedures": "Verfahren",
         "requests": "Anfragen",
         "locations": "Standorte",
+        "vendors": "Anbieter",
+        "parts": "Teile",
         "teams": "Teams",
         "title": "OpsCMMS",
         "version": "v1.0.0",
@@ -30,7 +32,8 @@
         "loading": "Lädt...",
         "save": "Speichern",
         "cancel": "Abbrechen",
-        "error": "Fehler"
+        "error": "Fehler",
+        "noDescription": "Keine Beschreibung vorhanden."
     },
     "WorkOrders": {
         "title": "Arbeitsaufträge",
@@ -67,7 +70,12 @@
         "priorities": {
             "High": "Hoch",
             "Medium": "Mittel",
-            "Low": "Niedrig"
+            "Low": "Niedrig",
+            "None": "Keine"
+        },
+        "subWorkOrders": "Unter-Arbeitsaufträge",
+        "buttons": {
+            "addParts": "Teile hinzufügen"
         }
     },
     "Assets": {
@@ -84,7 +92,8 @@
             "model": "Modell",
             "serialNumber": "Seriennummer",
             "manufacturer": "Hersteller",
-            "vendor": "Anbieter"
+            "vendor": "Anbieter",
+            "part": "Teil"
         },
         "addFilter": "Filter hinzufügen",
         "clearFilters": "Filter löschen",
@@ -125,6 +134,8 @@
         "editDesc": "Bearbeiten Sie die Details des bestehenden Arbeitsauftrags.",
         "newDesc": "Erstellen Sie einen neuen Arbeitsauftrag für Wartung oder Reparaturen.",
         "labels": {
+            "pictures": "Bilder",
+            "estimatedHours": "Geschätzte Dauer",
             "name": "Auftragsname",
             "description": "Beschreibung",
             "procedure": "Verfahren",
@@ -155,6 +166,7 @@
             "vendors": "z.B. Grainger"
         },
         "buttons": {
+            "uploading": "Wird hochgeladen...",
             "addPicture": "Bilder hinzufügen",
             "addProcedure": "Verfahren hinzufügen",
             "createOrAttach": "Neues Formular, Verfahren oder Checkliste erstellen oder anhängen",
@@ -166,7 +178,10 @@
         },
         "messages": {
             "repeats": "Wiederholt alle {interval} Woche(n) am {days}",
-            "selected": "{count} ausgewählt"
+            "selected": "{count} ausgewählt",
+            "created": "Arbeitsauftrag erstellt",
+            "updated": "Arbeitsauftrag aktualisiert",
+            "error": "Fehler"
         }
     },
     "AssetForm": {
@@ -175,6 +190,8 @@
         "editDesc": "Bearbeiten Sie die Details der bestehenden Anlage.",
         "newDesc": "Registrieren Sie eine neue Anlage im System.",
         "labels": {
+            "pictures": "Bilder",
+            "estimatedHours": "Geschätzte Dauer",
             "name": "Name",
             "pictures": "Bilder",
             "files": "Dateien",
@@ -211,6 +228,7 @@
             "description": "Anlagenbeschreibung..."
         },
         "buttons": {
+            "uploading": "Wird hochgeladen...",
             "addPicture": "Bilder hinzufügen",
             "uploading": "Wird hochgeladen...",
             "addFile": "Dateien hinzufügen",
@@ -240,13 +258,21 @@
             "status": "Status",
             "description": "Beschreibung",
             "manufacturer": "Hersteller",
+            "model": "Modell",
             "year": "Jahr",
             "location": "Standort",
             "criticality": "Kritikalität",
             "barcode": "Barcode",
             "pictures": "Bilder",
             "files": "Dateien",
-            "subAssets": "Unteranlagen"
+            "subAssets": "Unteranlagen",
+            "vendor": "Anbieter",
+            "parts": "Teile"
+        },
+        "status": {
+            "Online": "Online",
+            "Offline": "Offline",
+            "Do Not Track": "Nicht verfolgen"
         },
         "actions": {
             "edit": "Bearbeiten",
@@ -335,6 +361,8 @@
         "editDesc": "Bearbeiten Sie die Details des bestehenden Standorts.",
         "newDesc": "Fügen Sie einen neuen Standort oder eine neue Einrichtung hinzu.",
         "labels": {
+            "pictures": "Bilder",
+            "estimatedHours": "Geschätzte Dauer",
             "name": "Standortname",
             "pictures": "Bilder",
             "address": "Adresse",
@@ -356,6 +384,7 @@
             "search": "Standorte suchen..."
         },
         "buttons": {
+            "uploading": "Wird hochgeladen...",
             "addPictures": "Bilder hinzufügen",
             "uploadFiles": "Klicken zum Hochladen von Dateien",
             "manualInput": "oder manuell eingeben",
@@ -483,6 +512,383 @@
                 "sentDesc": "{count} Einladung(en) erfolgreich gesendet.",
                 "linkTitle": "Link kopiert",
                 "linkDesc": "Einladungslink in die Zwischenablage kopiert."
+            }
+        }
+    },
+    "Parts": {
+        "title": "Teile Schnittstelle",
+        "actions": {
+            "create": "Teil erstellen",
+            "edit": "Bearbeiten",
+            "delete": "Löschen",
+            "view": "Details anzeigen",
+            "cancel": "Abbrechen",
+            "save": "Speichern",
+            "add": "Hinzufügen",
+            "upload": "Hochladen"
+        },
+        "form": {
+            "title": {
+                "create": "Teil erstellen",
+                "edit": "Teil bearbeiten"
+            },
+            "labels": {
+                "pictures": "Bilder",
+                "estimatedHours": "Geschätzte Dauer",
+                "name": "Name",
+                "unitCost": "Stückkosten ($)",
+                "description": "Beschreibung",
+                "barcode": "QR / Barcode",
+                "partType": "Teiletyp",
+                "stockLocations": "Lagerorte",
+                "location": "Standort",
+                "area": "Bereich",
+                "inStock": "Auf Lager",
+                "minStock": "Min. Bestand",
+                "assets": "Anlagen",
+                "teams": "Zuständige Teams",
+                "vendors": "Anbieter",
+                "files": "Dateien"
+            },
+            "placeholders": {
+                "name": "Teilename",
+                "cost": "0.00",
+                "description": "Teilebeschreibung...",
+                "barcode": "Scannen oder Code eingeben",
+                "partType": "Typ wählen",
+                "searchType": "Typ suchen...",
+                "location": "Standort wählen",
+                "area": "Bereich...",
+                "assets": "Verknüpfte Anlagen wählen...",
+                "teams": "Teams wählen...",
+                "searchTeams": "Teams suchen...",
+                "vendors": "Anbieter wählen...",
+                "searchVendors": "Anbieter suchen...",
+                "searchParts": "Teile suchen..."
+            },
+            "buttons": {
+                "uploading": "Wird hochgeladen...",
+                "generate": "Zufallscode generieren",
+                "addLocation": "Standort hinzufügen",
+                "addFile": "Datei hinzufügen",
+                "uploading": "Lädt hoch..."
+            },
+            "messages": {
+                "created": "Teil erfolgreich erstellt",
+                "updated": "Teil erfolgreich aktualisiert",
+                "error": "Fehler beim Speichern des Teils",
+                "typeCreated": "Typ '{type}' erstellt und ausgewählt"
+            }
+        },
+        "create": "Teil erstellen",
+        "searchPlaceholder": "Teile suchen...",
+        "filters": {
+            "type": "Typ",
+            "allTypes": "Alle Typen",
+            "location": "Standort",
+            "allLocations": "Alle Standorte",
+            "asset": "Anlage",
+            "allAssets": "Alle Anlagen",
+            "vendor": "Anbieter",
+            "allVendors": "Alle Anbieter",
+            "area": "Bereich",
+            "clear": "Löschen"
+        },
+        "sortBy": {
+            "label": "Sortieren nach",
+            "newest": "Neueste",
+            "oldest": "Älteste",
+            "nameAsc": "Name (A-Z)",
+            "nameDesc": "Name (Z-A)"
+        },
+        "results": "{count} Ergebnisse",
+        "empty": {
+            "title": "Keine Teile gefunden",
+            "description": "Beginnen Sie mit dem Erstellen eines neuen Teils.",
+            "noSelection": "Kein Teil ausgewählt",
+            "selectToView": "Wählen Sie ein Teil, um Details anzuzeigen."
+        },
+        "card": {
+            "inStock": "vorrätig",
+            "outOfStock": "Nicht vorrätig"
+        },
+        "detail": {
+            "restock": "Aufstocken",
+            "edit": "Bearbeiten",
+            "delete": "Teil löschen",
+            "printQR": "QR Drucken",
+            "deleteDialog": {
+                "title": "Sind Sie sicher?",
+                "description": "Diese Aktion kann nicht rückgängig gemacht werden. {name} wird dauerhaft gelöscht.",
+                "cancel": "Abbrechen",
+                "confirm": "Löschen"
+            },
+            "sections": {
+                "minStock": "Mindestbestand",
+                "unitCost": "Stückkosten",
+                "partType": "Teiletyp",
+                "available": "Verfügbar",
+                "stockLocation": "Lagerort",
+                "assets": "Verwendet in Anlagen",
+                "vendors": "Anbieter",
+                "files": "Dateien"
+            },
+            "table": {
+                "location": "Standort",
+                "area": "Bereich",
+                "inStock": "Auf Lager",
+                "minStock": "Min. Bestand"
+            },
+            "restockDialog": {
+                "title": "Artikel aufstocken",
+                "location": "Standort",
+                "selectLocation": "Standort wählen",
+                "note": "Notiz",
+                "notePlaceholder": "Sie können eine Notiz zur Änderung hinterlassen",
+                "upload": "Bilder/Dateien hinzufügen",
+                "uploading": "Lädt hoch...",
+                "cancel": "Abbrechen",
+                "confirm": "Aufstocken bestätigen"
+            }
+        }
+    },
+    "Vendors": {
+        "title": "Anbieter",
+        "createVendor": "Anbieter erstellen",
+        "noVendors": "Keine Anbieter gefunden",
+        "getStarted": "Beginnen Sie mit dem Erstellen eines neuen Anbieters.",
+        "noSelection": "Kein Anbieter ausgewählt",
+        "selectToView": "Wählen Sie einen Anbieter, um Details anzuzeigen.",
+        "searchPlaceholder": "Suchen...",
+        "sortBy": "Sortieren nach",
+        "filter": {
+            "name": "Name",
+            "type": "Typ",
+            "location": "Standort",
+            "asset": "Anlage",
+            "part": "Teil",
+            "allTypes": "Alle Typen",
+            "allLocations": "Alle Standorte",
+            "allAssets": "Alle Anlagen",
+            "allParts": "Alle Teile"
+        },
+        "sortOptions": {
+            "latest": "Neueste",
+            "oldest": "Älteste",
+            "nameAsc": "Name (A-Z)",
+            "nameDesc": "Name (Z-A)"
+        },
+        "card": {
+            "contacts": "Kontakte",
+            "locs": "Standorte"
+        },
+        "detail": {
+            "edit": "Anbieter bearbeiten",
+            "delete": "Anbieter löschen",
+            "deleteDialog": {
+                "title": "Sind Sie sicher?",
+                "description": "Diese Aktion kann nicht rückgängig gemacht werden. Der Anbieter {name} wird dauerhaft gelöscht.",
+                "cancel": "Abbrechen",
+                "confirm": "Löschen"
+            },
+            "description": "Beschreibung",
+            "website": "Webseite",
+            "contacts": "Kontakte",
+            "locations": "Standorte",
+            "assets": "Anlagen",
+            "parts": "Teile",
+            "files": "Dateien",
+            "pictures": "Bilder"
+        },
+        "form": {
+            "title": {
+                "create": "Anbieter erstellen",
+                "edit": "Anbieter bearbeiten"
+            },
+            "labels": {
+                "pictures": "Bilder",
+                "estimatedHours": "Geschätzte Dauer",
+                "name": "Firmenname",
+                "desc": "Beschreibung",
+                "color": "Farbe",
+                "address": "Adresse",
+                "website": "Webseite",
+                "types": "Anbietertyp",
+                "locations": "Standorte",
+                "assets": "Anlagen",
+                "parts": "Teile",
+                "contacts": "Kontakte",
+                "pictures": "Bilder",
+                "files": "Dateien",
+                "contactName": "Name",
+                "contactEmail": "E-Mail",
+                "contactPhone": "Telefon",
+                "contactRole": "Rolle"
+            },
+            "placeholders": {
+                "name": "Firmenname",
+                "desc": "Anbieterbeschreibung...",
+                "address": "Adresse",
+                "website": "Webseiten-URL",
+                "type": "Typ wählen",
+                "searchType": "Typ suchen...",
+                "locations": "Standorte wählen...",
+                "assets": "Anlagen wählen...",
+                "parts": "Teile wählen...",
+                "searchParts": "Teile suchen...",
+                "contactName": "Name",
+                "contactEmail": "E-Mail",
+                "contactPhone": "Telefon",
+                "contactRole": "Rolle"
+            },
+            "buttons": {
+                "uploading": "Wird hochgeladen...",
+                "addContact": "Kontakt hinzufügen",
+                "addPicture": "Bild hinzufügen",
+                "addFile": "Datei hinzufügen",
+                "uploading": "Lädt hoch...",
+                "save": "Anbieter speichern",
+                "create": "Anbieter erstellen"
+            },
+            "messages": {
+                "created": "Anbieter erfolgreich erstellt",
+                "updated": "Anbieter erfolgreich aktualisiert",
+                "error": "Fehler beim Speichern des Anbieters",
+                "typeCreated": "Typ '{type}' erstellt und ausgewählt"
+            }
+        }
+    },
+    "Procedures": {
+        "title": "Verfahrensbibliothek",
+        "newProcedure": "Neue Verfahrensvorlage",
+        "searchPlaceholder": "Verfahrensvorlagen suchen",
+        "sortBy": {
+            "label": "Sortieren nach",
+            "nameAsc": "Name: Aufsteigend",
+            "nameDesc": "Name: Absteigend",
+            "dateAsc": "Datum: Älteste zuerst",
+            "dateDesc": "Datum: Neueste zuerst"
+        },
+        "filters": {
+            "category": "Kategorie",
+            "team": "Team",
+            "location": "Standort",
+            "asset": "Anlage",
+            "reset": "Zurücksetzen",
+            "selected": "{count} ausgewählt"
+        },
+        "empty": {
+            "noProcedures": "Keine Verfahren gefunden.",
+            "noSelection": "Kein Verfahren ausgewählt",
+            "selectToView": "Wählen Sie ein Verfahren aus der Liste, um Details anzuzeigen."
+        },
+        "actions": {
+            "edit": "Bearbeiten",
+            "duplicate": "Duplizieren",
+            "delete": "Löschen",
+            "fields": "Felder"
+        },
+        "detail": {
+            "fieldsTab": "Felder",
+            "detailsTab": "Details",
+            "procedureTags": "Verfahrens-Tags",
+            "categories": "Kategorien",
+            "locations": "Standorte",
+            "teamInCharge": "Verantwortliches Team",
+            "noTeams": "Keine Teams zugewiesen",
+            "meta": {
+                "createdBy": "Erstellt von",
+                "updatedBy": "Zuletzt aktualisiert von",
+                "on": "am"
+            },
+            "deleteDialog": {
+                "title": "Verfahren löschen",
+                "description": "Sind Sie sicher, dass Sie \"{name}\" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+                "confirm": "Löschen",
+                "cancel": "Abbrechen"
+            },
+            "duplicateDialog": {
+                "title": "Verfahren duplizieren",
+                "description": "Sind Sie sicher, dass Sie \"{name}\" duplizieren möchten? Eine neue Kopie wird erstellt.",
+                "confirm": "Duplizieren",
+                "cancel": "Abbrechen"
+            }
+        },
+        "builder": {
+            "title": "Verfahrens-Builder",
+            "untitled": "Unbenanntes Verfahren",
+            "save": "Verfahren speichern",
+            "saving": "Speichern...",
+            "saved": "Verfahren gespeichert",
+            "tabs": {
+                "canvas": "Arbeitsfläche",
+                "preview": "Vorschau",
+                "settings": "Einstellungen"
+            },
+            "canvas": {
+                "dragFields": "Felder aus der Seitenleiste ziehen",
+                "dropZone": "Felder hier ablegen, um Formular zu erstellen"
+            },
+            "settings": {
+                "procedureName": "Verfahrensname",
+                "description": "Beschreibung",
+                "organization": "Organisation",
+                "categories": "Kategorien",
+                "teams": "Verantwortliche Teams",
+                "locations": "Standorte",
+                "assets": "Anlagen",
+                "scoring": "Bewertung"
+            },
+            "fields": {
+                "text": "Texteingabe",
+                "number": "Zahleneingabe",
+                "checkbox": "Kontrollkästchen",
+                "select": "Dropdown",
+                "date": "Datum & Zeit",
+                "image": "Bildupload",
+                "signature": "Unterschrift",
+                "instruction": "Anweisung",
+                "options": "Optionen",
+                "required": "Erforderlich",
+                "label": "Beschriftung",
+                "placeholder": "Platzhalter"
+            }
+        },
+        "toolbox": {
+            "newItem": "Neues Element",
+            "field": "Feld",
+            "heading": "Überschrift",
+            "section": "Abschnitt"
+        },
+        "fieldTypes": {
+            "text": "Textfeld",
+            "checkbox": "Kontrollkästchen",
+            "number": "Zahlenfeld",
+            "amount": "Betragsfeld",
+            "multipleChoice": "Multiple Choice",
+            "checklist": "Checkliste",
+            "yesNo": "Ja oder Nein",
+            "inspection": "Inspektionsprüfung",
+            "signature": "Unterschriftenblock",
+            "date": "Datum",
+            "photo": "Bild-/Dateifeld"
+        },
+        "new": {
+            "title": "Neue Verfahrensvorlage erstellen",
+            "subtitle": "Geben Sie Ihrem Verfahren einen Namen und eine Beschreibung, um zu beginnen.",
+            "blankCard": {
+                "title": "Leeres Verfahren",
+                "description": "Verfahren von Grund auf neu starten"
+            },
+            "dialog": {
+                "title": "Erwecken Sie Ihr neues Verfahren zum Leben",
+                "description": "Geben Sie Ihrem Verfahren einen Namen und eine Beschreibung, um zu beginnen.",
+                "nameLabel": "Geben Sie ihm einen Namen",
+                "namePlaceholder": "z.B. Feuerlöscherinspektion",
+                "descLabel": "Beschreibung hinzufügen (optional)",
+                "descPlaceholder": "Inspektionsformular...",
+                "cancel": "Abbrechen",
+                "next": "Weiter"
             }
         }
     }

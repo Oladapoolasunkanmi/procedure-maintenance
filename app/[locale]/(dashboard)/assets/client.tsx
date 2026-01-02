@@ -27,7 +27,9 @@ import {
     Loader2,
     Users,
     Trash2,
-    Printer
+    Printer,
+    Wrench,
+    X
 } from "lucide-react"
 import QRCode from 'qrcode'
 
@@ -69,7 +71,8 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 
-import { assets, locations, Asset } from "@/lib/data"
+import { UseAssetButton } from "./use-asset-button"
+import { assets, Asset } from "@/lib/data"
 import { cn } from "@/lib/utils"
 
 import { Checkbox } from "@/components/ui/checkbox"
@@ -94,6 +97,7 @@ export function AssetsClient() {
         { label: t('filter.serialNumber'), icon: QrCodeIcon, type: "search", key: "serialNumber" },
         { label: t('filter.manufacturer'), icon: Briefcase, type: "search", key: "manufacturer" },
         { label: t('filter.vendor'), icon: Briefcase, type: "search", key: "vendor" },
+        { label: t('filter.part'), icon: Wrench, type: "search", key: "part" },
     ]
     const router = useRouter()
     const pathname = usePathname()
@@ -110,6 +114,7 @@ export function AssetsClient() {
         criticality: [],
         status: [],
         asset: "",
+        part: "",
         missingInfo: false
     })
 
@@ -118,6 +123,8 @@ export function AssetsClient() {
     const [assetsList, setAssetsList] = React.useState<Asset[]>([])
     const [locationsList, setLocationsList] = React.useState<any[]>([])
     const [teamsList, setTeamsList] = React.useState<any[]>([])
+    const [partsList, setPartsList] = React.useState<any[]>([])
+    const [vendorsList, setVendorsList] = React.useState<any[]>([])
 
     const [isLoading, setIsLoading] = React.useState(true)
     const [sortConfig, setSortConfig] = React.useState<{ key: 'name' | 'createdAt', direction: 'asc' | 'desc' }>({
@@ -173,6 +180,21 @@ export function AssetsClient() {
                 const data = await res.json()
                 if (data.items) setTeamsList(data.items.map((i: any) => ({ ...i, id: i.id || i._id })))
             } catch (e) { console.error(e) }
+
+
+            // Fetch Parts
+            try {
+                const res = await fetch('/api/parts?limit=1000')
+                const data = await res.json()
+                if (data.items) setPartsList(data.items.map((i: any) => ({ ...i, id: i.id || i._id })))
+            } catch (e) { console.error(e) }
+
+            // Fetch Vendors
+            try {
+                const res = await fetch('/api/vendors')
+                const data = await res.json()
+                if (data.items) setVendorsList(data.items.map((i: any) => ({ ...i, id: i.id || i._id })))
+            } catch (e) { console.error(e) }
         }
         loadData()
     }, [fetchAssets])
@@ -184,7 +206,21 @@ export function AssetsClient() {
             if (filterConfig.model && !asset.model?.toLowerCase().includes(filterConfig.model.toLowerCase())) return false
             if (filterConfig.manufacturer && !asset.manufacturer?.toLowerCase().includes(filterConfig.manufacturer.toLowerCase())) return false
             if (filterConfig.serialNumber && !asset.serialNumber?.toLowerCase().includes(filterConfig.serialNumber.toLowerCase())) return false
-            if (filterConfig.vendor && !(asset.vendors || []).some((v: string) => v.toLowerCase().includes(filterConfig.vendor.toLowerCase()))) return false
+            if (filterConfig.vendor) {
+                // asset.vendors stores ID now. We need to check if that ID resolves to a name containing the filter string.
+                const vendorName = vendorsList.find(v => v.id === asset.vendors)?.name || ""
+                if (!vendorName.toLowerCase().includes(filterConfig.vendor.toLowerCase())) return false
+            }
+
+            if (filterConfig.part) {
+                const partLower = filterConfig.part.toLowerCase()
+                let rawParts = (asset as any).parts || (asset as any).partIds
+                if (!Array.isArray(rawParts)) rawParts = []
+
+                // Find part IDs whose names match the search
+                const matchedPartIds = partsList.filter(p => p.name.toLowerCase().includes(partLower)).map(p => p.id)
+                if (!rawParts.some((id: string) => matchedPartIds.includes(id))) return false
+            }
 
             // Multi-select filters
             if (filterConfig.location.length > 0 && !filterConfig.location.includes(asset.locationId)) return false
@@ -265,19 +301,20 @@ export function AssetsClient() {
                             size="sm"
                             className="text-primary hover:text-primary/80 hover:bg-primary/10 h-auto py-0 px-2 font-medium"
                             onClick={() => {
-                                // Just check if filters are already set to find missing info
-                                // Simplest way is a special filter or just manually setting them?
-                                // Let's set a special "missingInfo" flag in filterConfig if needed, 
-                                // or just pre-fill a "status" or something? 
-                                // Actually, I should probably add a toggle for "Missing Info" or just filter manually here.
-                                // For now, I'll just clear filters and maybe log it, or ideally 
-                                // I should add a "missingInfo" boolean to filterConfig.
-                                // Let's add it to state first.
-                                setFilterConfig((prev: any) => ({ ...prev, missingInfo: true }))
+                                setFilterConfig((prev: any) => ({ ...prev, missingInfo: !prev.missingInfo }))
                             }}
                         >
-                            <AlertCircle className="mr-2 h-4 w-4" />
-                            {t('updateAssets')}
+                            {filterConfig.missingInfo ? (
+                                <>
+                                    <X className="mr-2 h-4 w-4" />
+                                    View All
+                                </>
+                            ) : (
+                                <>
+                                    <AlertCircle className="mr-2 h-4 w-4" />
+                                    {t('updateAssets')}
+                                </>
+                            )}
                         </Button>
                     </div>
                 )}
@@ -419,7 +456,7 @@ export function AssetsClient() {
                             </div>
                         ) : (
                             <>
-                                {filteredAssets.filter(a => !a.parentAssetId).map((asset) => { // User filteredAssets instead of assetsList
+                                {filteredAssets.filter(a => filterConfig.missingInfo ? true : !a.parentAssetId).map((asset) => {
                                     // Calculate sub-assets count from the loaded list recursively
                                     const calculatedSubAssetsCount = countAllDescendants(asset.id, assetsList)
                                     const displayCount = asset.subAssetsCount || calculatedSubAssetsCount
@@ -430,6 +467,7 @@ export function AssetsClient() {
                                             asset={{ ...asset, subAssetsCount: displayCount }}
                                             selected={asset.id === selectedId}
                                             onClick={() => handleSelect(asset.id)}
+                                            locationsList={locationsList}
                                         />
                                     )
                                 })}
@@ -478,6 +516,9 @@ export function AssetsClient() {
                             onSelect={handleSelect}
                             onUpdate={handleAssetUpdate}
                             refetch={() => fetchAssets()}
+                            partsList={partsList}
+                            vendorsList={vendorsList}
+                            locationsList={locationsList}
                         />
                     </div>
                 ) : (
@@ -494,8 +535,9 @@ export function AssetsClient() {
     )
 }
 
-function AssetCard({ asset, selected, onClick }: { asset: Asset; selected: boolean; onClick: () => void }) {
-    const location = locations.find((l) => l.id === asset.locationId)
+function AssetCard({ asset, selected, onClick, locationsList }: { asset: Asset; selected: boolean; onClick: () => void; locationsList?: any[] }) {
+    const t = useTranslations('Assets')
+    const location = locationsList?.find((l) => l.id === asset.locationId)
 
     return (
         <div
@@ -514,7 +556,7 @@ function AssetCard({ asset, selected, onClick }: { asset: Asset; selected: boole
                     <div className="flex items-center gap-1.5">
                         <div className={cn("h-2 w-2 rounded-full", asset.status === "Online" ? "bg-green-500" : "bg-red-500")} />
                         <span className={cn("text-xs font-medium", asset.status === "Online" ? "text-green-600" : "text-red-600")}>
-                            {asset.status}
+                            {t(`status.${asset.status}`)}
                         </span>
                     </div>
                 </div>
@@ -672,11 +714,11 @@ function CreateSubAssetDialog({ parentAsset, open, onOpenChange, onSuccess }: { 
     )
 }
 
-function AssetDetail({ asset, allAssets, onClose, onSelect, onUpdate, refetch }: { asset: Asset; allAssets: Asset[]; onClose: () => void; onSelect: (id: string) => void; onUpdate: (asset: Asset) => void; refetch: () => void }) {
+function AssetDetail({ asset, allAssets, onClose, onSelect, onUpdate, refetch, partsList, vendorsList, locationsList }: { asset: Asset; allAssets: Asset[]; onClose: () => void; onSelect: (id: string) => void; onUpdate: (asset: Asset) => void; refetch: () => void; partsList?: any[]; vendorsList?: any[]; locationsList?: any[] }) {
     const t = useTranslations('AssetDetail')
     const tCommon = useTranslations('Common')
     const router = useRouter()
-    const location = locations.find((l) => l.id === asset.locationId)
+    const location = locationsList?.find((l) => l.id === asset.locationId)
     const [activeTab, setActiveTab] = React.useState("details")
     const [indicatorStyle, setIndicatorStyle] = React.useState({ left: 0, width: 0 })
     const tabsListRef = React.useRef<HTMLDivElement>(null)
@@ -975,6 +1017,33 @@ function AssetDetail({ asset, allAssets, onClose, onSelect, onUpdate, refetch }:
                             </div>
                         )}
 
+                        {/* Parts */}
+                        <div className="space-y-3">
+                            <h3 className="font-semibold flex items-center gap-2">
+                                <Wrench className="h-4 w-4" /> {t('sections.parts')}
+                            </h3>
+                            {(() => {
+                                const rawParts = (asset as any).parts || (asset as any).partIds
+                                const finalParts = Array.isArray(rawParts) ? rawParts : []
+
+                                if (finalParts.length > 0) {
+                                    return (
+                                        <div className="flex flex-wrap gap-1">
+                                            {finalParts.map((partId: string) => {
+                                                const part = partsList?.find(p => p.id === partId)
+                                                return (
+                                                    <Badge key={partId} variant="secondary" className="px-2">
+                                                        {part ? part.name : "Unknown Part"}
+                                                    </Badge>
+                                                )
+                                            })}
+                                        </div>
+                                    )
+                                }
+                                return <p className="text-sm text-muted-foreground italic">No parts linked.</p>
+                            })()}
+                        </div>
+
                         {/* Fields */}
                         <div className="space-y-6">
                             {asset.manufacturer && (
@@ -988,19 +1057,42 @@ function AssetDetail({ asset, allAssets, onClose, onSelect, onUpdate, refetch }:
                                 <h3 className="font-semibold">{t('sections.year')}</h3>
                                 <p className="text-sm text-muted-foreground">{asset.year || "-"}</p>
                             </div>
-
                             <div className="space-y-1">
-                                <h3 className="font-semibold">{t('sections.location')}</h3>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <MapPin className="h-4 w-4 text-primary" />
-                                    {location?.name || "Unknown Location"}
+                                <h3 className="font-semibold">{t('sections.model')}</h3>
+                                <p className="text-sm text-muted-foreground">{asset.model || "-"}</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <h3 className="text-sm font-medium text-muted-foreground">{t('sections.location')}</h3>
+                                    <div className="flex items-center gap-2">
+                                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                                        <span>{location?.name || "Unknown Location"}</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <h3 className="text-sm font-medium text-muted-foreground">{t('sections.criticality')}</h3>
+                                    <Badge variant="outline" className={cn(
+                                        asset.criticality === 'High' || asset.criticality === 'Critical' ? "border-red-200 bg-red-50 text-red-700" :
+                                            asset.criticality === 'Medium' ? "border-yellow-200 bg-yellow-50 text-yellow-700" :
+                                                "border-green-200 bg-green-50 text-green-700"
+                                    )}>
+                                        {asset.criticality}
+                                    </Badge>
                                 </div>
                             </div>
 
-                            <div className="space-y-1">
-                                <h3 className="font-semibold">{t('sections.criticality')}</h3>
-                                <p className="text-sm text-muted-foreground">{asset.criticality}</p>
-                            </div>
+                            {/* Vendor Section */}
+                            {asset.vendors && (
+                                <div className="space-y-1">
+                                    <h3 className="text-sm font-medium text-muted-foreground">{t('sections.vendor') || "Vendor"}</h3>
+                                    <div className="flex items-center gap-2">
+                                        <Briefcase className="h-4 w-4 text-muted-foreground" />
+                                        <span>
+                                            {vendorsList?.find(v => v.id === asset.vendors)?.name || asset.vendors}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="space-y-1">
                                 <h3 className="font-semibold">{t('sections.barcode')}</h3>
@@ -1139,11 +1231,8 @@ function AssetDetail({ asset, allAssets, onClose, onSelect, onUpdate, refetch }:
                 </div>
 
                 {/* Fixed Footer */}
-                <div className="p-4 border-t flex justify-center shrink-0 bg-white z-10">
-                    <Button variant="outline" className="text-primary border-primary/20 hover:bg-primary/5 rounded-full px-6 shadow-sm">
-                        <Briefcase className="mr-2 h-4 w-4" />
-                        {t('actions.useInWorkOrder')}
-                    </Button>
+                <div className="p-4 border-t flex justify-center shrink-0 bg-white dark:bg-neutral-800 z-10">
+                    <UseAssetButton assetId={asset.id} />
                 </div>
             </Tabs>
         </div>

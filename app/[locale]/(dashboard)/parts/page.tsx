@@ -1,5 +1,10 @@
-import { ComingSoon } from "@/components/coming-soon"
+import { Suspense } from "react"
+import { PartsClient } from "./client"
 
-export default function PartsInventoryPage() {
-    return <ComingSoon title="Parts Inventory" />
+export default function PartsPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <PartsClient />
+        </Suspense>
+    )
 }

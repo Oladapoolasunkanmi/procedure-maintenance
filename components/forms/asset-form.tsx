@@ -67,7 +67,7 @@ const formSchema = z.object({
     barcode: z.string().optional(),
     assetType: z.string().optional(),
     vendors: z.string().optional(),
-    parts: z.string().optional(),
+    parts: z.array(z.string()).default([]),
     parentAssetId: z.string().optional(),
     notes: z.string().optional(),
     images: z.array(z.string()).optional(),
@@ -96,6 +96,8 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
     const [assetTree, setAssetTree] = useState<TreeNode[]>([])
     const [locationTree, setLocationTree] = useState<TreeNode[]>([])
     const [teams, setTeams] = useState<any[]>([])
+    const [partsList, setPartsList] = useState<any[]>([])
+    const [vendorsList, setVendorsList] = useState<any[]>([])
     const [realLocations, setRealLocations] = useState<any[]>([])
     const [isUploadingImage, setIsUploadingImage] = useState(false)
     const [isUploadingFile, setIsUploadingFile] = useState(false)
@@ -233,6 +235,18 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
             }
         }
 
+        const fetchParts = async () => {
+            try {
+                const res = await fetch('/api/parts')
+                const data = await res.json()
+                if (data.items) {
+                    setPartsList(data.items.map((p: any) => ({ ...p, id: p._id || p.id })))
+                }
+            } catch (error) {
+                console.error("Failed to fetch parts:", error)
+            }
+        }
+
         const fetchLocations = async () => {
             try {
                 const res = await fetch('/api/locations?limit=1000')
@@ -267,8 +281,22 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
             }
         }
 
+        const fetchVendors = async () => {
+            try {
+                const res = await fetch('/api/vendors')
+                const data = await res.json()
+                if (data.items) {
+                    setVendorsList(data.items.map((v: any) => ({ ...v, id: v._id || v.id })))
+                }
+            } catch (error) {
+                console.error("Failed to fetch vendors:", error)
+            }
+        }
+
         fetchAssets()
         fetchTeams()
+        fetchParts()
+        fetchVendors()
         fetchLocations()
     }, [])
 
@@ -727,11 +755,56 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                     control={form.control}
                                     name="vendors"
                                     render={({ field }) => (
-                                        <FormItem>
+                                        <FormItem className="flex flex-col">
                                             <FormLabel>{t('labels.vendor')}</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder={t('placeholders.vendor')} {...field} />
-                                            </FormControl>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <FormControl>
+                                                        <Button
+                                                            variant="outline"
+                                                            role="combobox"
+                                                            className={cn(
+                                                                "w-full justify-between bg-background",
+                                                                !field.value && "text-muted-foreground"
+                                                            )}
+                                                        >
+                                                            {field.value
+                                                                ? vendorsList.find(v => v.id === field.value)?.name || field.value
+                                                                : t('placeholders.vendor')}
+                                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                        </Button>
+                                                    </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[300px] p-0">
+                                                    <Command>
+                                                        <CommandInput placeholder="Search vendors..." />
+                                                        <CommandList>
+                                                            <CommandEmpty>No vendor found.</CommandEmpty>
+                                                            <CommandGroup>
+                                                                {vendorsList.map((vendor) => (
+                                                                    <CommandItem
+                                                                        value={vendor.name}
+                                                                        key={vendor.id}
+                                                                        onSelect={() => {
+                                                                            field.onChange(vendor.id)
+                                                                        }}
+                                                                    >
+                                                                        <Check
+                                                                            className={cn(
+                                                                                "mr-2 h-4 w-4",
+                                                                                vendor.id === field.value
+                                                                                    ? "opacity-100"
+                                                                                    : "opacity-0"
+                                                                            )}
+                                                                        />
+                                                                        {vendor.name}
+                                                                    </CommandItem>
+                                                                ))}
+                                                            </CommandGroup>
+                                                        </CommandList>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -743,11 +816,76 @@ export function AssetForm({ initialData, isEditing = false, assetId }: AssetForm
                                 control={form.control}
                                 name="parts"
                                 render={({ field }) => (
-                                    <FormItem>
+                                    <FormItem className="flex flex-col">
                                         <FormLabel>{t('labels.parts')}</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder={t('placeholders.parts')} {...field} />
-                                        </FormControl>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        className={cn(
+                                                            "w-full justify-between bg-background",
+                                                            !(field.value || []).length && "text-muted-foreground"
+                                                        )}
+                                                    >
+                                                        {(field.value || []).length > 0
+                                                            ? `${(field.value || []).length} selected`
+                                                            : t('placeholders.parts') || "Select parts"}
+                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[300px] p-0">
+                                                <Command>
+                                                    <CommandInput placeholder="Search parts..." />
+                                                    <CommandList>
+                                                        <CommandEmpty>No part found.</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {partsList.map((part) => (
+                                                                <CommandItem
+                                                                    value={part.name}
+                                                                    key={part.id}
+                                                                    onSelect={() => {
+                                                                        const current = field.value || []
+                                                                        const updated = current.includes(part.id)
+                                                                            ? current.filter((id: string) => id !== part.id)
+                                                                            : [...current, part.id]
+                                                                        field.onChange(updated)
+                                                                    }}
+                                                                >
+                                                                    <Check
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            (field.value || []).includes(part.id)
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {part.name}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {(field.value || []).map((partId: string) => {
+                                                const part = partsList.find((p) => p.id === partId)
+                                                return part ? (
+                                                    <Badge key={partId} variant="secondary" className="flex items-center gap-1">
+                                                        {part.name}
+                                                        <X
+                                                            className="h-3 w-3 cursor-pointer"
+                                                            onClick={() => {
+                                                                field.onChange((field.value || []).filter((id: string) => id !== partId))
+                                                            }}
+                                                        />
+                                                    </Badge>
+                                                ) : null
+                                            })}
+                                        </div>
                                         <FormMessage />
                                     </FormItem>
                                 )}

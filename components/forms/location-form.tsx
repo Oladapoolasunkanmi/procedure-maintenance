@@ -82,6 +82,7 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
     const [barcodeMode, setBarcodeMode] = useState<"auto" | "manual">("auto")
     const [locationTree, setLocationTree] = useState<LocationTreeNode[]>([])
     const [teams, setTeams] = useState<any[]>([])
+    const [vendorsList, setVendorsList] = useState<any[]>([])
     const [isUploadingImage, setIsUploadingImage] = useState(false)
     const [isUploadingFile, setIsUploadingFile] = useState(false)
 
@@ -210,8 +211,21 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
             }
         }
 
+        const fetchVendors = async () => {
+            try {
+                const res = await fetch('/api/vendors')
+                const data = await res.json()
+                if (data.items) {
+                    setVendorsList(data.items.map((v: any) => ({ ...v, id: v._id || v.id })))
+                }
+            } catch (error) {
+                console.error("Failed to fetch vendors:", error)
+            }
+        }
+
         fetchLocations()
         fetchTeams()
+        fetchVendors()
     }, [])
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -569,11 +583,56 @@ export function LocationForm({ initialData, isEditing = false, locationId }: Loc
                                 control={form.control}
                                 name="vendors"
                                 render={({ field }) => (
-                                    <FormItem>
+                                    <FormItem className="flex flex-col">
                                         <FormLabel>{t('labels.vendor')}</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder={t('placeholders.vendor')} {...field} />
-                                        </FormControl>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        className={cn(
+                                                            "w-full justify-between bg-background",
+                                                            !field.value && "text-muted-foreground"
+                                                        )}
+                                                    >
+                                                        {field.value
+                                                            ? vendorsList.find(v => v.id === field.value)?.name || field.value
+                                                            : t('placeholders.vendor')}
+                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[300px] p-0">
+                                                <Command>
+                                                    <CommandInput placeholder="Search vendors..." />
+                                                    <CommandList>
+                                                        <CommandEmpty>No vendor found.</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {vendorsList.map((vendor) => (
+                                                                <CommandItem
+                                                                    value={vendor.name}
+                                                                    key={vendor.id}
+                                                                    onSelect={() => {
+                                                                        field.onChange(vendor.id)
+                                                                    }}
+                                                                >
+                                                                    <Check
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            vendor.id === field.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {vendor.name}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
                                         <FormMessage />
                                     </FormItem>
                                 )}

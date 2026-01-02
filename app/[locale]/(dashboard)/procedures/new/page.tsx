@@ -6,6 +6,7 @@ import { Plus, Rocket, FileUp } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -41,6 +42,7 @@ const formSchema = z.object({
 
 export default function NewProcedurePage() {
     const router = useRouter()
+    const t = useTranslations('Procedures')
     const [isDialogOpen, setIsDialogOpen] = React.useState(false)
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -63,40 +65,26 @@ export default function NewProcedurePage() {
     return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] p-8">
             <div className="text-center mb-12">
-                <h1 className="text-3xl font-bold tracking-tight mb-2">Create a New Procedure Template</h1>
-                <p className="text-muted-foreground">Choose how you want to start building your procedure.</p>
+                <h1 className="text-3xl font-bold tracking-tight mb-2">{t('new.title')}</h1>
+                <p className="text-muted-foreground">{t('new.subtitle')}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full">
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-6 max-w-xl w-full">
                 <OptionCard
                     icon={Plus}
-                    title="Blank Procedure"
-                    description="Start Procedure From Scratch"
+                    title={t('new.blankCard.title')}
+                    description={t('new.blankCard.description')}
                     onClick={() => setIsDialogOpen(true)}
                     color="text-primary"
-                />
-                <OptionCard
-                    icon={Rocket}
-                    title="Use a Template"
-                    description="Find one in Global Procedure Library"
-                    onClick={() => { }} // Placeholder
-                    color="text-purple-500"
-                />
-                <OptionCard
-                    icon={FileUp}
-                    title="Import Forms"
-                    description="Send us your Template to Digitize"
-                    onClick={() => { }} // Placeholder
-                    color="text-green-500"
                 />
             </div>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                        <DialogTitle>Bring your new procedure to life</DialogTitle>
+                        <DialogTitle>{t('new.dialog.title')}</DialogTitle>
                         <DialogDescription>
-                            Give your procedure a name and description to get started.
+                            {t('new.dialog.description')}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -107,9 +95,9 @@ export default function NewProcedurePage() {
                                 name="name"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Give it a name</FormLabel>
+                                        <FormLabel>{t('new.dialog.nameLabel')}</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g. Fire Extinguisher Inspection" {...field} />
+                                            <Input placeholder={t('new.dialog.namePlaceholder')} {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -120,10 +108,10 @@ export default function NewProcedurePage() {
                                 name="description"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Add a description (optional)</FormLabel>
+                                        <FormLabel>{t('new.dialog.descLabel')}</FormLabel>
                                         <FormControl>
                                             <Textarea
-                                                placeholder="Routine inspection form..."
+                                                placeholder={t('new.dialog.descPlaceholder')}
                                                 className="resize-none"
                                                 {...field}
                                             />
@@ -134,9 +122,9 @@ export default function NewProcedurePage() {
                             />
                             <DialogFooter>
                                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                                    Cancel
+                                    {t('new.dialog.cancel')}
                                 </Button>
-                                <Button type="submit">Next</Button>
+                                <Button type="submit">{t('new.dialog.next')}</Button>
                             </DialogFooter>
                         </form>
                     </Form>
@@ -161,7 +149,7 @@ function OptionCard({
 }) {
     return (
         <Card
-            className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all group rounded-lg"
+            className="cursor-pointer hover:border-primary/50 shadow-none hover:shadow-sm transition-all group rounded-md"
             onClick={onClick}
         >
             <CardContent className="flex flex-col items-center justify-center p-10 text-center gap-4">

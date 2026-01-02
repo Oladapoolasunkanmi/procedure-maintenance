@@ -29,7 +29,8 @@ import {
     ChevronRight,
     Printer,
     Download,
-    Trash2
+    Trash2,
+    Wrench
 } from "lucide-react"
 import QRCode from 'qrcode'
 
@@ -95,6 +96,7 @@ export function LocationsClient() {
     const [isLoading, setIsLoading] = React.useState(true)
     const [nextBlockId, setNextBlockId] = React.useState<string | null>(null)
     const [teams, setTeams] = React.useState<any[]>([])
+    const [vendors, setVendors] = React.useState<any[]>([])
     const [filterConfig, setFilterConfig] = React.useState({
         name: "",
         asset: "",
@@ -170,10 +172,23 @@ export function LocationsClient() {
         }
     }, [])
 
+    const fetchVendors = React.useCallback(async () => {
+        try {
+            const res = await fetch('/api/vendors')
+            const data = await res.json()
+            if (data.items) {
+                setVendors(data.items.map((v: any) => ({ ...v, id: v._id || v.id })))
+            }
+        } catch (error) {
+            console.error("Failed to fetch vendors:", error)
+        }
+    }, [])
+
     React.useEffect(() => {
         fetchLocations()
         fetchTeams()
-    }, [fetchLocations, fetchTeams])
+        fetchVendors()
+    }, [fetchLocations, fetchTeams, fetchVendors])
 
     const filteredLocations = React.useMemo(() => {
         const filtered = locationsList.filter(loc => {
@@ -347,6 +362,7 @@ export function LocationsClient() {
                         onClose={() => router.replace(pathname)}
                         onSelect={handleSelect}
                         refetch={() => fetchLocations()}
+                        vendorsList={vendors}
                     />
                 </div>
             ) : (
@@ -480,7 +496,7 @@ function SubLocationNode({ location, allLocations, onSelect }: { location: Locat
     )
 }
 
-function LocationDetail({ location, allLocations, teams, onClose, onSelect, refetch }: { location: Location; allLocations: Location[]; teams: any[]; onClose: () => void; onSelect: (id: string) => void; refetch: () => void }) {
+function LocationDetail({ location, allLocations, teams, onClose, onSelect, refetch, vendorsList }: { location: Location; allLocations: Location[]; teams: any[]; onClose: () => void; onSelect: (id: string) => void; refetch: () => void; vendorsList: any[] }) {
     const t = useTranslations('Locations')
     const router = useRouter()
     const [activeTab, setActiveTab] = React.useState("details")
@@ -488,6 +504,7 @@ function LocationDetail({ location, allLocations, teams, onClose, onSelect, refe
     const tabsListRef = React.useRef<HTMLDivElement>(null)
     const [qrCodeUrl, setQrCodeUrl] = React.useState<string>("")
     const [assets, setAssets] = React.useState<Asset[]>([])
+    const [parts, setParts] = React.useState<any[]>([])
     const [isDeleting, setIsDeleting] = React.useState(false)
     const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
 
@@ -513,6 +530,25 @@ function LocationDetail({ location, allLocations, teams, onClose, onSelect, refe
             }
         }
         if (location.id) fetchLocationAssets()
+    }, [location.id])
+
+    // Fetch parts for this location
+    React.useEffect(() => {
+        const fetchLocationParts = async () => {
+            try {
+                const res = await fetch('/api/parts?limit=1000')
+                const data = await res.json()
+                if (data.items) {
+                    const locParts = data.items.filter((p: any) =>
+                        (p.locationConfig || []).some((lc: any) => (lc.locationId === location.id) || (lc.locationId === location._id))
+                    )
+                    setParts(locParts.map((p: any) => ({ ...p, id: p._id || p.id })))
+                }
+            } catch (error) {
+                console.error("Failed to fetch location parts", error)
+            }
+        }
+        if (location.id) fetchLocationParts()
     }, [location.id])
 
     React.useEffect(() => {
@@ -723,9 +759,7 @@ function LocationDetail({ location, allLocations, teams, onClose, onSelect, refe
                             <div className="space-y-1">
                                 <h3 className="font-semibold">{t('detail.sections.vendor')}</h3>
                                 <p className="text-sm text-muted-foreground">
-                                    {Array.isArray(location.vendors)
-                                        ? location.vendors.join(", ")
-                                        : (location.vendors || "-")}
+                                    {vendorsList?.find(v => v.id === location.vendors)?.name || location.vendors || "-"}
                                 </p>
                             </div>
 
@@ -778,6 +812,42 @@ function LocationDetail({ location, allLocations, teams, onClose, onSelect, refe
                             </div>
 
                             <SubLocationTree parentId={location.id} locations={allLocations} onSelect={onSelect} />
+                        </div>
+
+                        <Separator />
+
+                        {/* Parts Section */}
+                        <div className="space-y-4">
+                            <h3 className="font-semibold flex items-center gap-2">
+                                <Wrench className="h-4 w-4" />
+                                Parts ({parts.length})
+                            </h3>
+                            {parts.length > 0 ? (
+                                <div className="space-y-2">
+                                    {parts.map(part => {
+                                        // find the config for this location to show quantity
+                                        const config = (part.locationConfig || []).find((lc: any) => (lc.locationId === location.id) || (lc.locationId === location._id))
+                                        return (
+                                            <div key={part.id} className="flex items-center justify-between p-2 rounded-md border bg-muted/20 hover:bg-muted/50 transition-colors group">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-8 w-8 rounded bg-background border flex items-center justify-center text-xs font-bold text-orange-600 border-orange-200 bg-orange-50">
+                                                        {part.name.substring(0, 1)}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <Link href={`/parts?id=${part.id}`} className="text-sm font-medium hover:underline">{part.name}</Link>
+                                                        <span className="text-xs text-muted-foreground">{part.barcode || "No Barcode"}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="text-sm font-medium">
+                                                    {config?.quantity || 0} in stock
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground italic">No parts in this location.</p>
+                            )}
                         </div>
 
                         <Separator />
